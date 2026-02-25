@@ -19,6 +19,7 @@ type PatientService interface {
 	Update(ctx context.Context, id uint, req domain.UpdatePatientRequest) (*domain.Patient, error)
 	Delete(ctx context.Context, id uint) error
 	ChangeStatus(ctx context.Context, id uint, req domain.PatientStatusRequest, changedBy uint) error
+	RegenerateAccessCode(ctx context.Context, id uint) (*domain.Patient, error)
 	DashboardStats(ctx context.Context, doctorID *uint) (map[domain.PatientStatus]int64, error)
 }
 
@@ -253,6 +254,42 @@ func (s *patientService) ChangeStatus(ctx context.Context, id uint, req domain.P
 	}
 
 	return nil
+}
+
+func (s *patientService) RegenerateAccessCode(ctx context.Context, id uint) (*domain.Patient, error) {
+	p, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("пациент не найден")
+		}
+		return nil, err
+	}
+
+	// Генерируем новый уникальный код
+	var exists int64
+	var newCode string
+	for {
+		newCode = domain.GenerateAccessCode()
+		// Проверяем уникальность
+		if err := s.repo.CountByAccessCode(ctx, newCode, &exists); err != nil {
+			return nil, errors.New("не удалось проверить уникальность кода")
+		}
+		if exists == 0 {
+			break
+		}
+	}
+
+	p.AccessCode = newCode
+	if err := s.repo.Update(ctx, p); err != nil {
+		return nil, errors.New("не удалось обновить код доступа")
+	}
+
+	// Уведомить пациента о новом коде через Telegram
+	if s.bot != nil {
+		s.bot.NotifyPatientNewAccessCode(ctx, id, newCode)
+	}
+
+	return p, nil
 }
 
 func (s *patientService) DashboardStats(ctx context.Context, doctorID *uint) (map[domain.PatientStatus]int64, error) {

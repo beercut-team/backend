@@ -162,6 +162,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 				patients.PATCH("/:id", patientHandler.Update)
 				patients.DELETE("/:id", middleware.RequireRole(domain.RoleAdmin), patientHandler.Delete)
 				patients.POST("/:id/status", patientHandler.ChangeStatus)
+				patients.POST("/:id/regenerate-code", middleware.RequireRole(domain.RoleAdmin), patientHandler.RegenerateAccessCode)
 			}
 
 			// Checklists

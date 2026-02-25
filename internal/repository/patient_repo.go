@@ -18,6 +18,7 @@ type PatientRepository interface {
 	CreateStatusHistory(ctx context.Context, h *domain.PatientStatusHistory) error
 	FindStatusHistory(ctx context.Context, patientID uint) ([]domain.PatientStatusHistory, error)
 	CountByStatus(ctx context.Context, doctorID *uint) (map[domain.PatientStatus]int64, error)
+	CountByAccessCode(ctx context.Context, code string, count *int64) error
 }
 
 type PatientFilters struct {
@@ -138,4 +139,8 @@ func (r *patientRepository) CountByStatus(ctx context.Context, doctorID *uint) (
 		counts[r.Status] = r.Count
 	}
 	return counts, nil
+}
+
+func (r *patientRepository) CountByAccessCode(ctx context.Context, code string, count *int64) error {
+	return r.db.WithContext(ctx).Model(&domain.Patient{}).Where("access_code = ?", code).Count(count).Error
 }

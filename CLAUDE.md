@@ -26,36 +26,113 @@ Clean Architecture: `domain → repository → service → handler`
 
 ## Key Commands
 ```bash
-go build ./...           # Build everything
-go run ./cmd/api         # Start the API server
-go run ./cmd/seed        # Seed test data
-docker-compose up        # Start all services
+go build ./...                      # Build everything
+go run ./cmd/api                    # Start the API server
+go run ./cmd/seed                   # Seed test data
+go run ./cmd/fix-access-codes       # Generate access codes for old patients
+docker-compose up                   # Start all services
 ```
 
-## Roles
-- `ADMIN` — full access
-- `SURGEON` — reviews checklists, schedules surgeries
-- `DISTRICT_DOCTOR` — creates/manages patients in their district
-- `PATIENT` — limited access
+## Roles & Permissions
+- **ADMIN** — full system access, user management, all CRUD operations
+- **SURGEON** — reviews checklists, schedules surgeries, approves patients
+- **DISTRICT_DOCTOR** — creates/manages patients in their district, fills checklists
+- **PATIENT** — limited public access via access code (no authentication required)
+
+## Patient Access Code System
+
+### Overview
+Each patient receives a unique 8-character hex access code upon creation. This code enables:
+- **Public status tracking** without authentication
+- **Telegram bot integration** for real-time notifications
+- **Secure patient identification** without exposing personal data
+
+### Access Code Generation
+- Auto-generated on patient creation: `domain.GenerateAccessCode()`
+- Format: 8-character hex string (e.g., `a1b2c3d4`)
+- Stored in `patients.access_code` (unique index)
+
+### Public Access Points
+
+#### 1. Web Interface
+**URL**: `/patient?code=<access_code>`
+- Beautiful responsive UI with Tailwind CSS
+- Shows: patient name, status, surgery date, status history
+- No authentication required
+- Mobile-friendly design
+
+#### 2. Public API
+**Endpoint**: `GET /api/v1/patients/public/:accessCode`
+- Returns: `PatientPublicResponse` (limited fields)
+- No auth token required
+- Used by web interface and external integrations
+
+#### 3. Telegram Bot
+**Commands**:
+- `/start <access_code>` — bind patient to Telegram chat
+- `/status` — check current preparation status
+- Automatic notifications on status changes
+
+### Admin Features
+- Access code displayed prominently in patient card
+- Copy-to-clipboard functionality
+- Direct links for Telegram and web access
+- Example: `/patient?code=a1b2c3d4`
 
 ## API Base URL
 `/api/v1/`
 
-## Environment
-Copy `.env.example` to `.env` and configure. Key vars: DB_*, JWT_*, REDIS_*, MINIO_*, TELEGRAM_BOT_TOKEN
+## Public Endpoints (No Auth)
+- `POST /api/v1/auth/register` — user registration
+- `POST /api/v1/auth/login` — user login
+- `POST /api/v1/auth/refresh` — refresh access token
+- `GET /api/v1/patients/public/:accessCode` — patient status by code
+- `GET /patient` — patient web interface
+- `GET /admin` — admin panel UI
+- `GET /docs` — API documentation (Scalar)
+
+## Protected Endpoints (Auth Required)
+All other endpoints require JWT token in `Authorization: Bearer <token>` header.
+
+## Environment Variables
+Copy `.env.example` to `.env` and configure:
+- `DB_*` — PostgreSQL connection
+- `JWT_SECRET` — JWT signing key
+- `REDIS_*` — Redis connection
+- `MINIO_*` — Object storage (optional, falls back to local FS)
+- `TELEGRAM_BOT_TOKEN` — Telegram bot API token
 
 ## Module Structure
 - `cmd/api/` — Main server entrypoint
-- `cmd/seed/` — Seed test data
+- `cmd/seed/` — Seed test data (districts, users, patients)
+- `cmd/fix-access-codes/` — Utility to generate codes for existing patients
 - `internal/config/` — Config loading (Viper)
-- `internal/domain/` — All domain models
+- `internal/domain/` — All domain models and DTOs
 - `internal/handler/` — HTTP handlers + response helpers
-- `internal/middleware/` — Auth + RBAC middleware
-- `internal/repository/` — Database repositories
+- `internal/middleware/` — Auth (JWT) + RBAC middleware
+- `internal/repository/` — Database repositories (interface-based)
 - `internal/service/` — Business logic services
 - `internal/service/formulas/` — IOL calculation formulas (SRK/T, Haigis, Hoffer Q)
-- `internal/server/` — Router + DI wiring
+- `internal/server/` — Router + DI wiring + embedded HTML pages
 - `pkg/database/` — PostgreSQL + Redis connections
 - `pkg/storage/` — File storage abstraction (MinIO + local)
-- `pkg/telegram/` — Telegram bot
+- `pkg/telegram/` — Telegram bot with patient notifications
 - `pkg/logger/` — Zerolog setup
+
+## Telegram Bot Integration
+
+### Patient Commands
+- `/start <code>` — bind access code to chat
+- `/status` — view current preparation status
+- Receives automatic notifications on status changes
+
+### Doctor Commands
+- `/register <email>` — bind doctor account to Telegram
+- `/mypatients` — list assigned patients
+- Receives notifications about new patients and reviews
+
+### Notification Types
+- New patient assigned to doctor
+- Patient status changed
+- Checklist ready for surgeon review
+- Surgery scheduled

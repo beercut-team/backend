@@ -300,6 +300,28 @@ func (b *Bot) NotifySurgeonReviewNeeded(ctx context.Context, patientID uint) {
 	}
 }
 
+// NotifyPatientNewAccessCode уведомляет пациента о новом коде доступа
+func (b *Bot) NotifyPatientNewAccessCode(ctx context.Context, patientID uint, newCode string) {
+	if b == nil || b.api == nil {
+		return
+	}
+
+	binding, err := b.telegramRepo.FindByPatientID(ctx, patientID)
+	if err != nil || !binding.IsActive {
+		return
+	}
+
+	patient, err := b.patientRepo.FindByID(ctx, patientID)
+	if err != nil {
+		return
+	}
+
+	message := fmt.Sprintf("🔑 Новый код доступа\n\nПациент: %s %s\n\nВаш новый код доступа: %s\n\nИспользуйте его для проверки статуса на сайте: /patient?code=%s",
+		patient.FirstName, patient.LastName, newCode, newCode)
+
+	b.sendMessage(binding.ChatID, message)
+}
+
 func (b *Bot) sendMessage(chatID int64, text string) {
 	msg := tgbotapi.NewMessage(chatID, text)
 	if _, err := b.api.Send(msg); err != nil {

@@ -175,3 +175,19 @@ func (h *PatientHandler) Delete(c *gin.Context) {
 
 	Success(c, http.StatusOK, domain.MessageResponse{Message: "пациент удалён"})
 }
+
+func (h *PatientHandler) RegenerateAccessCode(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		BadRequest(c, "неверный id")
+		return
+	}
+
+	patient, err := h.svc.RegenerateAccessCode(c.Request.Context(), uint(id))
+	if err != nil {
+		Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	Success(c, http.StatusOK, patient)
+}
