@@ -75,16 +75,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run migrations
-        run: |
-          docker run --rm \
-            --network app-network \
-            -v ${{ github.workspace }}/migrations:/migrations \
-            migrate/migrate \
-            -path=/migrations \
-            -database="postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@postgres:5432/${{ secrets.DB_NAME }}?sslmode=disable" up
-
-      - name: Run seed (idempotent)
+      - name: Run seed (idempotent, includes AutoMigrate)
         run: |
           docker run --rm \
             --network app-network \
@@ -95,6 +86,18 @@ jobs:
             -e "DB_NAME=${{ secrets.DB_NAME }}" \
             -e "DB_SSLMODE=disable" \
             "$IMAGE_NAME:${{ github.sha }}" ./seed
+
+      - name: Fix access codes for existing patients
+        run: |
+          docker run --rm \
+            --network app-network \
+            -e "DB_HOST=postgres" \
+            -e "DB_PORT=5432" \
+            -e "DB_USER=${{ secrets.DB_USER }}" \
+            -e "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" \
+            -e "DB_NAME=${{ secrets.DB_NAME }}" \
+            -e "DB_SSLMODE=disable" \
+            "$IMAGE_NAME:${{ github.sha }}" ./fix-access-codes
 
       - name: Stop old container
         run: docker stop $IMAGE_NAME 2>/dev/null || true
