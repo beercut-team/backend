@@ -599,8 +599,17 @@ async function deletePatient(id) {
 async function showPatientDetails(id) {
     try {
         const patient = await api('/patients/' + id);
-        const checklist = await api('/checklists/patient/' + id).catch(() => ({items: []}));
-        const checklistItems = checklist.items || checklist || [];
+        const checklistResponse = await api('/checklists/patient/' + id).catch(() => []);
+
+        // Обработка разных форматов ответа API
+        let checklistItems = [];
+        if (Array.isArray(checklistResponse)) {
+            checklistItems = checklistResponse;
+        } else if (checklistResponse && Array.isArray(checklistResponse.items)) {
+            checklistItems = checklistResponse.items;
+        } else if (checklistResponse && Array.isArray(checklistResponse.data)) {
+            checklistItems = checklistResponse.data;
+        }
 
         const modal = document.createElement('div');
         modal.id = 'patient-modal';
