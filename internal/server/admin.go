@@ -76,7 +76,8 @@ async function refreshAccessToken() {
             body: JSON.stringify({ refresh_token: refreshToken })
         });
         if (!response.ok) throw new Error('Refresh failed');
-        const data = await response.json();
+        const jsonResponse = await response.json();
+        const data = jsonResponse.data || jsonResponse;
         token = data.access_token;
         refreshToken = data.refresh_token;
         localStorage.setItem('admin_token', token);
@@ -138,13 +139,14 @@ function renderLogin() {
         const errEl = document.getElementById('login-error');
         errEl.classList.add('hidden');
         try {
-            const data = await api('/auth/login', {
+            const response = await api('/auth/login', {
                 method: 'POST',
                 body: JSON.stringify({
                     email: document.getElementById('email').value,
                     password: document.getElementById('password').value
                 })
             });
+            const data = response.data || response;
             if (data.user.role !== 'ADMIN') throw new Error('Доступ только для администраторов');
             token = data.access_token;
             refreshToken = data.refresh_token;
@@ -206,7 +208,8 @@ async function renderApp() {
 }
 
 async function renderDashboard() {
-    const stats = await api('/admin/stats');
+    const statsResponse = await api('/admin/stats');
+    const stats = statsResponse.data || statsResponse;
     document.getElementById('tab-content').innerHTML = ` + "`" + `
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-white rounded-xl shadow p-6 text-center">
@@ -615,7 +618,8 @@ async function deletePatient(id) {
 
 async function showPatientDetails(id) {
     try {
-        const patient = await api('/patients/' + id);
+        const patientResponse = await api('/patients/' + id);
+        const patient = patientResponse.data || patientResponse;
         const checklistResponse = await api('/checklists/patient/' + id).catch(() => []);
 
         // Обработка разных форматов ответа API
