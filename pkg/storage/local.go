@@ -20,11 +20,11 @@ func NewLocalStorage(basePath string) Storage {
 func (s *localStorage) Upload(_ context.Context, path string, reader io.Reader, _ int64, _ string) error {
 	fullPath := filepath.Join(s.basePath, path)
 	if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
-		return fmt.Errorf("failed to create directory: %w", err)
+		return fmt.Errorf("не удалось создать директорию: %w", err)
 	}
 	f, err := os.Create(fullPath)
 	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
+		return fmt.Errorf("не удалось создать файл: %w", err)
 	}
 	defer f.Close()
 

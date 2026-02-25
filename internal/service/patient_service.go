@@ -76,7 +76,7 @@ func (s *patientService) Create(ctx context.Context, req domain.CreatePatientReq
 		FromStatus: domain.PatientStatusNew,
 		ToStatus:   domain.PatientStatusPreparation,
 		ChangedBy:  doctorID,
-		Comment:    "Patient created, checklist generated",
+		Comment:    "Пациент создан, чек-лист сгенерирован",
 	})
 
 	return patient, nil

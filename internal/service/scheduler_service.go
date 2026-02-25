@@ -44,7 +44,7 @@ func (s *SchedulerService) Start() {
 	s.cron.AddFunc("0 3 * * *", s.cleanupOrphanedMedia)
 
 	s.cron.Start()
-	log.Info().Msg("scheduler started")
+	log.Info().Msg("планировщик запущен")
 }
 
 func (s *SchedulerService) Stop() {
@@ -55,13 +55,13 @@ func (s *SchedulerService) checkExpiredItems() {
 	ctx := context.Background()
 	items, err := s.checklistRepo.FindExpiredItems(ctx)
 	if err != nil {
-		log.Error().Err(err).Msg("scheduler: failed to find expired items")
+		log.Error().Err(err).Msg("планировщик: не удалось найти просроченные пункты")
 		return
 	}
 
 	for _, item := range items {
 		s.checklistRepo.UpdateItemStatus(ctx, item.ID, domain.ChecklistStatusExpired)
-		log.Info().Uint("item_id", item.ID).Msg("scheduler: marked checklist item as expired")
+		log.Info().Uint("item_id", item.ID).Msg("планировщик: пункт чек-листа отмечен как просроченный")
 	}
 }
 
@@ -72,7 +72,7 @@ func (s *SchedulerService) sendSurgeryReminders() {
 	threeDays := time.Now().AddDate(0, 0, 3)
 	surgeries, err := s.surgeryRepo.FindUpcoming(ctx, threeDays)
 	if err != nil {
-		log.Error().Err(err).Msg("scheduler: failed to find upcoming surgeries")
+		log.Error().Err(err).Msg("планировщик: не удалось найти предстоящие операции")
 		return
 	}
 
@@ -82,8 +82,8 @@ func (s *SchedulerService) sendSurgeryReminders() {
 			s.notifRepo.Create(ctx, &domain.Notification{
 				UserID:     surgery.SurgeonID,
 				Type:       domain.NotifSurgeryReminder,
-				Title:      "Surgery Reminder",
-				Body:       surgery.Patient.LastName + " " + surgery.Patient.FirstName + " — surgery in " + time.Until(surgery.ScheduledDate).Round(24*time.Hour).String(),
+				Title:      "Напоминание об операции",
+				Body:       surgery.Patient.LastName + " " + surgery.Patient.FirstName + " — операция через " + time.Until(surgery.ScheduledDate).Round(24*time.Hour).String(),
 				EntityType: "surgery",
 				EntityID:   surgery.ID,
 			})
@@ -95,12 +95,12 @@ func (s *SchedulerService) cleanupOrphanedMedia() {
 	ctx := context.Background()
 	orphaned, err := s.mediaRepo.FindOrphaned(ctx)
 	if err != nil {
-		log.Error().Err(err).Msg("scheduler: failed to find orphaned media")
+		log.Error().Err(err).Msg("планировщик: не удалось найти потерянные медиафайлы")
 		return
 	}
 
 	for _, m := range orphaned {
 		s.mediaRepo.Delete(ctx, m.ID)
-		log.Info().Uint("media_id", m.ID).Msg("scheduler: deleted orphaned media")
+		log.Info().Uint("media_id", m.ID).Msg("планировщик: удалён потерянный медиафайл")
 	}
 }

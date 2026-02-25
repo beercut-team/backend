@@ -24,10 +24,10 @@ func NewBot(token string, patientRepo repository.PatientRepository, telegramRepo
 
 	api, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Telegram bot: %w", err)
+		return nil, fmt.Errorf("не удалось создать Telegram бот: %w", err)
 	}
 
-	log.Info().Str("bot", api.Self.UserName).Msg("Telegram bot authorized")
+	log.Info().Str("bot", api.Self.UserName).Msg("Telegram бот авторизован")
 
 	return &Bot{
 		api:          api,
@@ -54,7 +54,7 @@ func (b *Bot) Start() {
 		}
 	}()
 
-	log.Info().Msg("Telegram bot listening for updates")
+	log.Info().Msg("Telegram бот слушает обновления")
 }
 
 func (b *Bot) handleMessage(msg *tgbotapi.Message) {
@@ -67,30 +67,30 @@ func (b *Bot) handleMessage(msg *tgbotapi.Message) {
 	case text == "/status":
 		b.handleStatus(ctx, msg)
 	case text == "/help":
-		b.sendMessage(msg.Chat.ID, "Available commands:\n/start <access_code> — Link to your patient record\n/status — Check current preparation status\n/help — Show this help")
+		b.sendMessage(msg.Chat.ID, "Доступные команды:\n/start <код_доступа> — Привязать к вашей карте пациента\n/status — Проверить текущий статус подготовки\n/help — Показать эту справку")
 	default:
-		b.sendMessage(msg.Chat.ID, "Unknown command. Use /help to see available commands.")
+		b.sendMessage(msg.Chat.ID, "Неизвестная команда. Используйте /help для просмотра доступных команд.")
 	}
 }
 
 func (b *Bot) handleStart(ctx context.Context, msg *tgbotapi.Message) {
 	parts := strings.Fields(msg.Text)
 	if len(parts) < 2 {
-		b.sendMessage(msg.Chat.ID, "Please provide your access code: /start <access_code>")
+		b.sendMessage(msg.Chat.ID, "Пожалуйста, укажите ваш код доступа: /start <код_доступа>")
 		return
 	}
 
 	accessCode := parts[1]
 	patient, err := b.patientRepo.FindByAccessCode(ctx, accessCode)
 	if err != nil {
-		b.sendMessage(msg.Chat.ID, "Invalid access code. Please check and try again.")
+		b.sendMessage(msg.Chat.ID, "Неверный код доступа. Пожалуйста, проверьте и попробуйте снова.")
 		return
 	}
 
 	// Check if already bound
 	existing, _ := b.telegramRepo.FindByChatID(ctx, msg.Chat.ID)
 	if existing != nil {
-		b.sendMessage(msg.Chat.ID, "This chat is already linked. Use /status to check status.")
+		b.sendMessage(msg.Chat.ID, "Этот чат уже привязан. Используйте /status для проверки статуса.")
 		return
 	}
 
@@ -102,12 +102,12 @@ func (b *Bot) handleStart(ctx context.Context, msg *tgbotapi.Message) {
 	}
 
 	if err := b.telegramRepo.Create(ctx, binding); err != nil {
-		b.sendMessage(msg.Chat.ID, "Failed to link. Please try again later.")
+		b.sendMessage(msg.Chat.ID, "Не удалось привязать. Пожалуйста, попробуйте позже.")
 		return
 	}
 
 	b.sendMessage(msg.Chat.ID, fmt.Sprintf(
-		"Successfully linked!\nPatient: %s %s\nStatus: %s\n\nUse /status to check preparation progress.",
+		"Успешно привязано!\nПациент: %s %s\nСтатус: %s\n\nИспользуйте /status для проверки прогресса подготовки.",
 		patient.FirstName, patient.LastName, patient.Status,
 	))
 }
@@ -115,24 +115,24 @@ func (b *Bot) handleStart(ctx context.Context, msg *tgbotapi.Message) {
 func (b *Bot) handleStatus(ctx context.Context, msg *tgbotapi.Message) {
 	binding, err := b.telegramRepo.FindByChatID(ctx, msg.Chat.ID)
 	if err != nil {
-		b.sendMessage(msg.Chat.ID, "No patient linked. Use /start <access_code> first.")
+		b.sendMessage(msg.Chat.ID, "Пациент не привязан. Сначала используйте /start <код_доступа>.")
 		return
 	}
 
 	patient, err := b.patientRepo.FindByAccessCode(ctx, binding.AccessCode)
 	if err != nil {
-		b.sendMessage(msg.Chat.ID, "Patient not found. The record may have been removed.")
+		b.sendMessage(msg.Chat.ID, "Пациент не найден. Запись могла быть удалена.")
 		return
 	}
 
 	statusText := fmt.Sprintf(
-		"Patient: %s %s\nStatus: %s\nOperation: %s (%s)",
+		"Пациент: %s %s\nСтатус: %s\nОперация: %s (%s)",
 		patient.FirstName, patient.LastName,
 		patient.Status, patient.OperationType, patient.Eye,
 	)
 
 	if patient.SurgeryDate != nil {
-		statusText += fmt.Sprintf("\nSurgery Date: %s", patient.SurgeryDate.Format("02.01.2006"))
+		statusText += fmt.Sprintf("\nДата операции: %s", patient.SurgeryDate.Format("02.01.2006"))
 	}
 
 	b.sendMessage(msg.Chat.ID, statusText)
@@ -148,6 +148,6 @@ func (b *Bot) SendNotification(chatID int64, text string) {
 func (b *Bot) sendMessage(chatID int64, text string) {
 	msg := tgbotapi.NewMessage(chatID, text)
 	if _, err := b.api.Send(msg); err != nil {
-		log.Error().Err(err).Int64("chat_id", chatID).Msg("failed to send Telegram message")
+		log.Error().Err(err).Int64("chat_id", chatID).Msg("не удалось отправить Telegram сообщение")
 	}
 }

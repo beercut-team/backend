@@ -36,13 +36,13 @@ func (s *iolService) Calculate(ctx context.Context, req domain.IOLCalculationReq
 
 	// Input validation with warnings
 	if req.AxialLength < 20.0 || req.AxialLength > 30.0 {
-		warnings = append(warnings, fmt.Sprintf("Axial length %.2f mm is outside normal range (20-30 mm)", req.AxialLength))
+		warnings = append(warnings, fmt.Sprintf("Длина оси %.2f мм выходит за пределы нормы (20-30 мм)", req.AxialLength))
 	}
 	if avgK < 40.0 || avgK > 48.0 {
-		warnings = append(warnings, fmt.Sprintf("Average K %.2f D is outside normal range (40-48 D)", avgK))
+		warnings = append(warnings, fmt.Sprintf("Средняя кератометрия %.2f D выходит за пределы нормы (40-48 D)", avgK))
 	}
 	if req.ACD > 0 && (req.ACD < 2.0 || req.ACD > 4.5) {
-		warnings = append(warnings, fmt.Sprintf("ACD %.2f mm is outside normal range (2.0-4.5 mm)", req.ACD))
+		warnings = append(warnings, fmt.Sprintf("Глубина передней камеры %.2f мм выходит за пределы нормы (2.0-4.5 мм)", req.ACD))
 	}
 
 	switch strings.ToUpper(req.Formula) {

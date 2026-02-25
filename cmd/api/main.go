@@ -13,18 +13,18 @@ func main() {
 
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to load config")
+		log.Fatal().Err(err).Msg("не удалось загрузить конфигурацию")
 	}
 
 	db, err := database.NewPostgres(cfg)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to connect to database")
+		log.Fatal().Err(err).Msg("не удалось подключиться к базе данных")
 	}
 
 	r := server.NewRouter(cfg, db)
 
-	log.Info().Str("port", cfg.AppPort).Msg("starting server")
+	log.Info().Str("port", cfg.AppPort).Msg("запуск сервера")
 	if err := r.Run(":" + cfg.AppPort); err != nil {
-		log.Fatal().Err(err).Msg("server failed")
+		log.Fatal().Err(err).Msg("сервер остановлен с ошибкой")
 	}
 }

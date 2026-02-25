@@ -38,13 +38,13 @@ func (h *IOLHandler) Calculate(c *gin.Context) {
 func (h *IOLHandler) History(c *gin.Context) {
 	patientID, err := strconv.ParseUint(c.Param("patientId"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid patient_id")
+		BadRequest(c, "неверный patient_id")
 		return
 	}
 
 	calcs, err := h.svc.GetHistory(c.Request.Context(), uint(patientID))
 	if err != nil {
-		InternalError(c, "failed to get history")
+		InternalError(c, "не удалось получить историю")
 		return
 	}
 

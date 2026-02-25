@@ -71,7 +71,7 @@ func (s *surgeryService) Schedule(ctx context.Context, req domain.CreateSurgeryR
 		FromStatus: patient.Status,
 		ToStatus:   domain.PatientStatusSurgeryScheduled,
 		ChangedBy:  surgeonID,
-		Comment:    "Surgery scheduled for " + req.ScheduledDate,
+		Comment:    "Операция запланирована на " + req.ScheduledDate,
 	})
 
 	// Update patient surgery date and surgeon

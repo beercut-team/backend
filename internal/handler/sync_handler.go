@@ -30,13 +30,13 @@ func (h *SyncHandler) Push(c *gin.Context) {
 		return
 	}
 
-	Success(c, http.StatusOK, domain.MessageResponse{Message: "sync push completed"})
+	Success(c, http.StatusOK, domain.MessageResponse{Message: "синхронизация завершена"})
 }
 
 func (h *SyncHandler) Pull(c *gin.Context) {
 	since := c.Query("since")
 	if since == "" {
-		BadRequest(c, "since parameter is required (ISO 8601)")
+		BadRequest(c, "параметр since обязателен (ISO 8601)")
 		return
 	}
 

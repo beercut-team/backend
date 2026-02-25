@@ -21,13 +21,13 @@ func NewChecklistHandler(svc service.ChecklistService) *ChecklistHandler {
 func (h *ChecklistHandler) GetByPatient(c *gin.Context) {
 	patientID, err := strconv.ParseUint(c.Param("patientId"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid patient_id")
+		BadRequest(c, "неверный patient_id")
 		return
 	}
 
 	items, err := h.svc.GetByPatient(c.Request.Context(), uint(patientID))
 	if err != nil {
-		InternalError(c, "failed to get checklist")
+		InternalError(c, "не удалось получить чек-лист")
 		return
 	}
 
@@ -37,7 +37,7 @@ func (h *ChecklistHandler) GetByPatient(c *gin.Context) {
 func (h *ChecklistHandler) UpdateItem(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid id")
+		BadRequest(c, "неверный id")
 		return
 	}
 
@@ -60,7 +60,7 @@ func (h *ChecklistHandler) UpdateItem(c *gin.Context) {
 func (h *ChecklistHandler) ReviewItem(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid id")
+		BadRequest(c, "неверный id")
 		return
 	}
 
@@ -83,13 +83,13 @@ func (h *ChecklistHandler) ReviewItem(c *gin.Context) {
 func (h *ChecklistHandler) GetProgress(c *gin.Context) {
 	patientID, err := strconv.ParseUint(c.Param("patientId"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid patient_id")
+		BadRequest(c, "неверный patient_id")
 		return
 	}
 
 	progress, err := h.svc.GetProgress(c.Request.Context(), uint(patientID))
 	if err != nil {
-		InternalError(c, "failed to get progress")
+		InternalError(c, "не удалось получить прогресс")
 		return
 	}
 

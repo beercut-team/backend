@@ -16,12 +16,12 @@ func main() {
 
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to load config")
+		log.Fatal().Err(err).Msg("не удалось загрузить конфигурацию")
 	}
 
 	db, err := database.NewPostgres(cfg)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to connect to database")
+		log.Fatal().Err(err).Msg("не удалось подключиться к базе данных")
 	}
 
 	ctx := context.Background()
@@ -39,10 +39,10 @@ func main() {
 	for i := range districts {
 		result := db.WithContext(ctx).Where("code = ?", districts[i].Code).FirstOrCreate(&districts[i])
 		if result.Error != nil {
-			log.Error().Err(result.Error).Str("district", districts[i].Name).Msg("failed to seed district")
+			log.Error().Err(result.Error).Str("district", districts[i].Name).Msg("не удалось добавить район")
 		}
 	}
-	log.Info().Int("count", len(districts)).Msg("seeded districts")
+	log.Info().Int("count", len(districts)).Msg("районы добавлены")
 
 	// --- Seed Users ---
 	hash, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
@@ -82,10 +82,10 @@ func main() {
 	for i := range users {
 		result := db.WithContext(ctx).Where("email = ?", users[i].Email).FirstOrCreate(&users[i])
 		if result.Error != nil {
-			log.Error().Err(result.Error).Str("email", users[i].Email).Msg("failed to seed user")
+			log.Error().Err(result.Error).Str("email", users[i].Email).Msg("не удалось добавить пользователя")
 		}
 	}
-	log.Info().Int("count", len(users)).Msg("seeded users")
+	log.Info().Int("count", len(users)).Msg("пользователи добавлены")
 
 	// --- Seed Patients ---
 	patients := []domain.Patient{
@@ -114,10 +114,10 @@ func main() {
 	for i := range patients {
 		result := db.WithContext(ctx).Where("access_code = ?", patients[i].AccessCode).FirstOrCreate(&patients[i])
 		if result.Error != nil {
-			log.Error().Err(result.Error).Str("patient", patients[i].LastName).Msg("failed to seed patient")
+			log.Error().Err(result.Error).Str("patient", patients[i].LastName).Msg("не удалось добавить пациента")
 		}
 	}
-	log.Info().Int("count", len(patients)).Msg("seeded patients")
+	log.Info().Int("count", len(patients)).Msg("пациенты добавлены")
 
 	// --- Seed Checklist Items for first patient ---
 	var existingCount int64
@@ -138,9 +138,9 @@ func main() {
 		}
 		if len(items) > 0 {
 			db.WithContext(ctx).Create(&items)
-			log.Info().Int("count", len(items)).Msg("seeded checklist items for patient 1")
+			log.Info().Int("count", len(items)).Msg("чек-лист для пациента 1 добавлен")
 		}
 	}
 
-	log.Info().Msg("seeding completed successfully")
+	log.Info().Msg("заполнение тестовыми данными завершено успешно")
 }

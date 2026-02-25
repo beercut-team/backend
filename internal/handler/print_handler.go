@@ -20,7 +20,7 @@ func NewPrintHandler(pdfSvc service.PDFService) *PrintHandler {
 func (h *PrintHandler) RoutingSheet(c *gin.Context) {
 	patientID, err := strconv.ParseUint(c.Param("patientId"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid patient_id")
+		BadRequest(c, "неверный patient_id")
 		return
 	}
 
@@ -38,7 +38,7 @@ func (h *PrintHandler) RoutingSheet(c *gin.Context) {
 func (h *PrintHandler) ChecklistReport(c *gin.Context) {
 	patientID, err := strconv.ParseUint(c.Param("patientId"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid patient_id")
+		BadRequest(c, "неверный patient_id")
 		return
 	}
 

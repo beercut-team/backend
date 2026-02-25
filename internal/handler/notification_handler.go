@@ -24,7 +24,7 @@ func (h *NotificationHandler) List(c *gin.Context) {
 
 	notifications, total, err := h.svc.List(c.Request.Context(), userID, p.Offset(), p.Limit)
 	if err != nil {
-		InternalError(c, "failed to list notifications")
+		InternalError(c, "не удалось получить уведомления")
 		return
 	}
 
@@ -34,34 +34,34 @@ func (h *NotificationHandler) List(c *gin.Context) {
 func (h *NotificationHandler) MarkAsRead(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid id")
+		BadRequest(c, "неверный id")
 		return
 	}
 
 	userID := middleware.GetUserID(c)
 	if err := h.svc.MarkAsRead(c.Request.Context(), uint(id), userID); err != nil {
-		InternalError(c, "failed to mark as read")
+		InternalError(c, "не удалось отметить как прочитанное")
 		return
 	}
 
-	Success(c, http.StatusOK, domain.MessageResponse{Message: "notification marked as read"})
+	Success(c, http.StatusOK, domain.MessageResponse{Message: "уведомление отмечено как прочитанное"})
 }
 
 func (h *NotificationHandler) MarkAllAsRead(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 	if err := h.svc.MarkAllAsRead(c.Request.Context(), userID); err != nil {
-		InternalError(c, "failed to mark all as read")
+		InternalError(c, "не удалось отметить все как прочитанные")
 		return
 	}
 
-	Success(c, http.StatusOK, domain.MessageResponse{Message: "all notifications marked as read"})
+	Success(c, http.StatusOK, domain.MessageResponse{Message: "все уведомления отмечены как прочитанные"})
 }
 
 func (h *NotificationHandler) UnreadCount(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 	count, err := h.svc.UnreadCount(c.Request.Context(), userID)
 	if err != nil {
-		InternalError(c, "failed to count unread")
+		InternalError(c, "не удалось подсчитать непрочитанные")
 		return
 	}
 

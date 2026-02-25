@@ -39,7 +39,7 @@ func (h *PatientHandler) Create(c *gin.Context) {
 func (h *PatientHandler) GetByID(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid id")
+		BadRequest(c, "неверный id")
 		return
 	}
 
@@ -92,7 +92,7 @@ func (h *PatientHandler) List(c *gin.Context) {
 
 	patients, total, err := h.svc.List(c.Request.Context(), filters, p.Offset(), p.Limit)
 	if err != nil {
-		InternalError(c, "failed to list patients")
+		InternalError(c, "не удалось получить список пациентов")
 		return
 	}
 
@@ -102,7 +102,7 @@ func (h *PatientHandler) List(c *gin.Context) {
 func (h *PatientHandler) Update(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid id")
+		BadRequest(c, "неверный id")
 		return
 	}
 
@@ -124,7 +124,7 @@ func (h *PatientHandler) Update(c *gin.Context) {
 func (h *PatientHandler) ChangeStatus(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid id")
+		BadRequest(c, "неверный id")
 		return
 	}
 
@@ -140,7 +140,7 @@ func (h *PatientHandler) ChangeStatus(c *gin.Context) {
 		return
 	}
 
-	Success(c, http.StatusOK, domain.MessageResponse{Message: "status updated"})
+	Success(c, http.StatusOK, domain.MessageResponse{Message: "статус обновлён"})
 }
 
 func (h *PatientHandler) Dashboard(c *gin.Context) {
@@ -154,7 +154,7 @@ func (h *PatientHandler) Dashboard(c *gin.Context) {
 
 	stats, err := h.svc.DashboardStats(c.Request.Context(), doctorID)
 	if err != nil {
-		InternalError(c, "failed to get stats")
+		InternalError(c, "не удалось получить статистику")
 		return
 	}
 

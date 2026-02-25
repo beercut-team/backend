@@ -20,7 +20,7 @@ func NewMediaHandler(svc service.MediaService) *MediaHandler {
 func (h *MediaHandler) Upload(c *gin.Context) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
-		BadRequest(c, "file is required")
+		BadRequest(c, "файл обязателен")
 		return
 	}
 	defer file.Close()
@@ -28,7 +28,7 @@ func (h *MediaHandler) Upload(c *gin.Context) {
 	patientIDStr := c.PostForm("patient_id")
 	patientID, err := strconv.ParseUint(patientIDStr, 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid patient_id")
+		BadRequest(c, "неверный patient_id")
 		return
 	}
 
@@ -59,13 +59,13 @@ func (h *MediaHandler) Upload(c *gin.Context) {
 func (h *MediaHandler) GetByPatient(c *gin.Context) {
 	patientID, err := strconv.ParseUint(c.Param("patientId"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid patient_id")
+		BadRequest(c, "неверный patient_id")
 		return
 	}
 
 	media, err := h.svc.GetByPatient(c.Request.Context(), uint(patientID))
 	if err != nil {
-		InternalError(c, "failed to get media")
+		InternalError(c, "не удалось получить медиафайлы")
 		return
 	}
 
@@ -75,7 +75,7 @@ func (h *MediaHandler) GetByPatient(c *gin.Context) {
 func (h *MediaHandler) Download(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid id")
+		BadRequest(c, "неверный id")
 		return
 	}
 
@@ -91,7 +91,7 @@ func (h *MediaHandler) Download(c *gin.Context) {
 func (h *MediaHandler) Thumbnail(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid id")
+		BadRequest(c, "неверный id")
 		return
 	}
 
@@ -107,7 +107,7 @@ func (h *MediaHandler) Thumbnail(c *gin.Context) {
 func (h *MediaHandler) Delete(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid id")
+		BadRequest(c, "неверный id")
 		return
 	}
 
@@ -116,5 +116,5 @@ func (h *MediaHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	Success(c, http.StatusOK, gin.H{"message": "deleted"})
+	Success(c, http.StatusOK, gin.H{"message": "удалено"})
 }

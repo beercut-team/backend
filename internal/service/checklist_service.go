@@ -142,7 +142,7 @@ func (s *checklistService) CheckAndTransition(ctx context.Context, patientID uin
 				PatientID:  patientID,
 				FromStatus: domain.PatientStatusPreparation,
 				ToStatus:   domain.PatientStatusReviewNeeded,
-				Comment:    "All required checklist items completed",
+				Comment:    "Все обязательные пункты чек-листа выполнены",
 			})
 		}
 	}

@@ -23,19 +23,19 @@ func NewMinIOStorage(cfg *config.Config) (Storage, error) {
 		Secure: cfg.MinIOUseSSL,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create MinIO client: %w", err)
+		return nil, fmt.Errorf("не удалось создать MinIO клиент: %w", err)
 	}
 
 	ctx := context.Background()
 	exists, err := client.BucketExists(ctx, cfg.MinIOBucket)
 	if err != nil {
-		return nil, fmt.Errorf("failed to check bucket: %w", err)
+		return nil, fmt.Errorf("не удалось проверить bucket: %w", err)
 	}
 	if !exists {
 		if err := client.MakeBucket(ctx, cfg.MinIOBucket, minio.MakeBucketOptions{}); err != nil {
-			return nil, fmt.Errorf("failed to create bucket: %w", err)
+			return nil, fmt.Errorf("не удалось создать bucket: %w", err)
 		}
-		log.Info().Str("bucket", cfg.MinIOBucket).Msg("created MinIO bucket")
+		log.Info().Str("bucket", cfg.MinIOBucket).Msg("создан MinIO bucket")
 	}
 
 	return &minioStorage{client: client, bucket: cfg.MinIOBucket}, nil

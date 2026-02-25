@@ -38,7 +38,7 @@ func (h *SurgeryHandler) Schedule(c *gin.Context) {
 func (h *SurgeryHandler) GetByID(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid id")
+		BadRequest(c, "неверный id")
 		return
 	}
 
@@ -57,7 +57,7 @@ func (h *SurgeryHandler) List(c *gin.Context) {
 
 	surgeries, total, err := h.svc.ListBySurgeon(c.Request.Context(), surgeonID, p.Offset(), p.Limit)
 	if err != nil {
-		InternalError(c, "failed to list surgeries")
+		InternalError(c, "не удалось получить список операций")
 		return
 	}
 
@@ -67,7 +67,7 @@ func (h *SurgeryHandler) List(c *gin.Context) {
 func (h *SurgeryHandler) Update(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid id")
+		BadRequest(c, "неверный id")
 		return
 	}
 

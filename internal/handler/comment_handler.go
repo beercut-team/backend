@@ -38,13 +38,13 @@ func (h *CommentHandler) Create(c *gin.Context) {
 func (h *CommentHandler) GetByPatient(c *gin.Context) {
 	patientID, err := strconv.ParseUint(c.Param("patientId"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid patient_id")
+		BadRequest(c, "неверный patient_id")
 		return
 	}
 
 	comments, err := h.svc.GetByPatient(c.Request.Context(), uint(patientID))
 	if err != nil {
-		InternalError(c, "failed to get comments")
+		InternalError(c, "не удалось получить комментарии")
 		return
 	}
 
@@ -54,15 +54,15 @@ func (h *CommentHandler) GetByPatient(c *gin.Context) {
 func (h *CommentHandler) MarkAsRead(c *gin.Context) {
 	patientID, err := strconv.ParseUint(c.Param("patientId"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid patient_id")
+		BadRequest(c, "неверный patient_id")
 		return
 	}
 
 	userID := middleware.GetUserID(c)
 	if err := h.svc.MarkAsRead(c.Request.Context(), uint(patientID), userID); err != nil {
-		InternalError(c, "failed to mark as read")
+		InternalError(c, "не удалось отметить как прочитанное")
 		return
 	}
 
-	Success(c, http.StatusOK, domain.MessageResponse{Message: "comments marked as read"})
+	Success(c, http.StatusOK, domain.MessageResponse{Message: "комментарии отмечены как прочитанные"})
 }

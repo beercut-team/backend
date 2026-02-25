@@ -21,10 +21,10 @@ func NewPostgres(cfg *config.Config) (*gorm.DB, error) {
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
+		return nil, fmt.Errorf("не удалось подключиться к базе данных: %w", err)
 	}
 
-	log.Info().Msg("connected to PostgreSQL")
+	log.Info().Msg("подключено к PostgreSQL")
 
 	if err := db.AutoMigrate(
 		&domain.User{},
@@ -42,9 +42,9 @@ func NewPostgres(cfg *config.Config) (*gorm.DB, error) {
 		&domain.TelegramBinding{},
 		&domain.SyncQueue{},
 	); err != nil {
-		return nil, fmt.Errorf("auto-migrate failed: %w", err)
+		return nil, fmt.Errorf("не удалось выполнить миграцию: %w", err)
 	}
 
-	log.Info().Msg("database migrated")
+	log.Info().Msg("миграция базы данных завершена")
 	return db, nil
 }
