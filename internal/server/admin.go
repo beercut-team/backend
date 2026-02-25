@@ -14,6 +14,8 @@ const adminHTML = `<!DOCTYPE html>
         .status-red { background: #fee; color: #c00; border-left: 4px solid #c00; }
         .status-yellow { background: #ffc; color: #960; border-left: 4px solid #fa0; }
         .status-green { background: #efe; color: #060; border-left: 4px solid #0a0; }
+        .circular-chart { transform: rotate(-90deg); }
+        .circle { stroke-linecap: round; transition: stroke-dasharray 0.3s ease; }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -484,7 +486,7 @@ async function renderPatients(page = 1) {
     const statusBadge = { PREPARATION: 'bg-yellow-100 text-yellow-700', REVIEW_NEEDED: 'bg-blue-100 text-blue-700', APPROVED: 'bg-green-100 text-green-700', REJECTED: 'bg-red-100 text-red-700', SCHEDULED: 'bg-purple-100 text-purple-700' };
     items.forEach(p => {
         const rowColor = getStatusColor(p.status);
-        html += ` + "`" + `<tr class="border-t ${rowColor}">
+        html += ` + "`" + `<tr class="border-t ${rowColor} hover:bg-blue-50 cursor-pointer" onclick="showPatientDetails(${p.id})">
             <td class="px-4 py-3">${p.id}</td>
             <td class="px-4 py-3 font-medium">${p.last_name} ${p.first_name} ${p.middle_name||''}</td>
             <td class="px-4 py-3">${p.phone || '—'}</td>
@@ -492,7 +494,7 @@ async function renderPatients(page = 1) {
             <td class="px-4 py-3"><span class="text-xs">${p.operation_type || '—'}</span></td>
             <td class="px-4 py-3">${p.eye || '—'}</td>
             <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs ${statusBadge[p.status]||'bg-gray-100'}">${p.status}</span></td>
-            <td class="px-4 py-3 space-x-2">
+            <td class="px-4 py-3 space-x-2" onclick="event.stopPropagation()">
                 <button onclick='editPatient(${JSON.stringify(p).replace(/'/g,"&#39;")})' class="text-blue-600 hover:underline text-xs">Изменить</button>
                 <button onclick="deletePatient(${p.id})" class="text-red-600 hover:underline text-xs">Удалить</button>
             </td>
@@ -592,6 +594,163 @@ async function updatePatient(id) {
 async function deletePatient(id) {
     if (!confirm('Удалить пациента?')) return;
     alert('Удаление пациентов пока не реализовано в API');
+}
+
+async function showPatientDetails(id) {
+    try {
+        const patient = await api('/patients/' + id);
+        const checklist = await api('/checklists/patient/' + id).catch(() => ({items: []}));
+        const checklistItems = checklist.items || checklist || [];
+
+        const modal = document.createElement('div');
+        modal.id = 'patient-modal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+        modal.onclick = (e) => { if (e.target === modal) closePatientModal(); };
+
+        const completedItems = checklistItems.filter(i => i.status === 'COMPLETED').length;
+        const totalItems = checklistItems.length;
+        const progress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+
+        const surgeryDate = patient.surgery_date ? new Date(patient.surgery_date).toLocaleDateString('ru-RU') : 'Не назначена';
+        const dob = patient.date_of_birth ? new Date(patient.date_of_birth).toLocaleDateString('ru-RU') : '—';
+
+        modal.innerHTML = ` + "`" + `
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 flex justify-between items-center rounded-t-2xl">
+                <h2 class="text-2xl font-bold">Карта пациента #${patient.id}</h2>
+                <button onclick="closePatientModal()" class="text-white hover:text-gray-200 text-3xl leading-none">&times;</button>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <!-- Код доступа -->
+                <div class="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-sm text-gray-600 mb-1">🔑 Код доступа пациента</div>
+                            <div class="text-3xl font-mono font-bold text-green-700">${patient.access_code}</div>
+                            <div class="text-xs text-gray-500 mt-2">Для Telegram: /start ${patient.access_code}</div>
+                            <div class="text-xs text-gray-500">Для сайта: /patient?code=${patient.access_code}</div>
+                        </div>
+                        <button onclick="copyAccessCode('${patient.access_code}')" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
+                            📋 Копировать
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Основная информация -->
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-bold text-gray-700 mb-3 flex items-center">
+                            <span class="text-blue-600 mr-2">👤</span> Личные данные
+                        </h3>
+                        <div class="space-y-2 text-sm">
+                            <div><span class="text-gray-600">ФИО:</span> <span class="font-medium">${patient.last_name} ${patient.first_name} ${patient.middle_name||''}</span></div>
+                            <div><span class="text-gray-600">Дата рождения:</span> <span class="font-medium">${dob}</span></div>
+                            <div><span class="text-gray-600">Телефон:</span> <span class="font-medium">${patient.phone || '—'}</span></div>
+                            <div><span class="text-gray-600">Email:</span> <span class="font-medium">${patient.email || '—'}</span></div>
+                            <div><span class="text-gray-600">Адрес:</span> <span class="font-medium">${patient.address || '—'}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-bold text-gray-700 mb-3 flex items-center">
+                            <span class="text-red-600 mr-2">📋</span> Документы
+                        </h3>
+                        <div class="space-y-2 text-sm">
+                            <div><span class="text-gray-600">СНИЛС:</span> <span class="font-medium">${patient.snils || '—'}</span></div>
+                            <div><span class="text-gray-600">Паспорт:</span> <span class="font-medium">${patient.passport_series || ''} ${patient.passport_number || '—'}</span></div>
+                            <div><span class="text-gray-600">Полис ОМС:</span> <span class="font-medium">${patient.policy_number || '—'}</span></div>
+                            <div><span class="text-gray-600">Район:</span> <span class="font-medium">${patient.district?.name || '—'}</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Медицинская информация -->
+                <div class="bg-blue-50 rounded-lg p-4">
+                    <h3 class="font-bold text-gray-700 mb-3 flex items-center">
+                        <span class="text-blue-600 mr-2">🏥</span> Медицинская информация
+                    </h3>
+                    <div class="grid md:grid-cols-2 gap-4 text-sm">
+                        <div><span class="text-gray-600">Диагноз:</span> <span class="font-medium">${patient.diagnosis || '—'}</span></div>
+                        <div><span class="text-gray-600">Тип операции:</span> <span class="font-medium">${patient.operation_type || '—'}</span></div>
+                        <div><span class="text-gray-600">Глаз:</span> <span class="font-medium">${patient.eye || '—'}</span></div>
+                        <div><span class="text-gray-600">Дата операции:</span> <span class="font-medium">${surgeryDate}</span></div>
+                        <div class="md:col-span-2"><span class="text-gray-600">Заметки:</span> <span class="font-medium">${patient.notes || '—'}</span></div>
+                    </div>
+                </div>
+
+                <!-- Статус -->
+                <div class="bg-yellow-50 rounded-lg p-4">
+                    <h3 class="font-bold text-gray-700 mb-3 flex items-center">
+                        <span class="text-yellow-600 mr-2">📊</span> Статус подготовки
+                    </h3>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-2xl font-bold text-gray-800">${patient.status}</div>
+                            <div class="text-sm text-gray-600 mt-1">Прогресс чек-листа: ${completedItems}/${totalItems} (${progress}%)</div>
+                        </div>
+                        <div class="w-32 h-32">
+                            <svg viewBox="0 0 36 36" class="circular-chart">
+                                <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e5e7eb" stroke-width="3"/>
+                                <path class="circle" stroke-dasharray="${progress}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#10b981" stroke-width="3"/>
+                                <text x="18" y="20.35" class="percentage" text-anchor="middle" font-size="8" font-weight="bold" fill="#374151">${progress}%</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Чек-лист -->
+                ${checklistItems.length > 0 ? ` + "`" + `
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="font-bold text-gray-700 mb-3 flex items-center">
+                        <span class="text-purple-600 mr-2">✓</span> Чек-лист подготовки
+                    </h3>
+                    <div class="space-y-2 max-h-64 overflow-y-auto">
+                        ${checklistItems.map(item => {
+                            const statusIcon = item.status === 'COMPLETED' ? '✅' : item.status === 'PENDING' ? '⏳' : '❌';
+                            const statusColor = item.status === 'COMPLETED' ? 'text-green-600' : item.status === 'PENDING' ? 'text-yellow-600' : 'text-red-600';
+                            return ` + "`" + `<div class="flex items-start gap-2 text-sm p-2 bg-white rounded">
+                                <span class="text-lg">${statusIcon}</span>
+                                <div class="flex-1">
+                                    <div class="font-medium ${statusColor}">${item.title}</div>
+                                    ${item.description ? ` + "`" + `<div class="text-xs text-gray-500">${item.description}</div>` + "`" + ` : ''}
+                                </div>
+                            </div>` + "`" + `;
+                        }).join('')}
+                    </div>
+                </div>
+                ` + "`" + ` : ''}
+
+                <!-- Действия -->
+                <div class="flex gap-3 pt-4 border-t">
+                    <a href="/patient?code=${patient.access_code}" target="_blank" class="flex-1 bg-blue-600 text-white text-center px-4 py-2 rounded-lg hover:bg-blue-700">
+                        🔗 Открыть публичную страницу
+                    </a>
+                    <button onclick="closePatientModal()" class="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">
+                        Закрыть
+                    </button>
+                </div>
+            </div>
+        </div>
+        ` + "`" + `;
+
+        document.body.appendChild(modal);
+    } catch (err) {
+        alert('Ошибка загрузки данных пациента: ' + err.message);
+    }
+}
+
+function closePatientModal() {
+    const modal = document.getElementById('patient-modal');
+    if (modal) modal.remove();
+}
+
+function copyAccessCode(code) {
+    navigator.clipboard.writeText(code).then(() => {
+        alert('Код доступа скопирован: ' + code);
+    }).catch(() => {
+        alert('Не удалось скопировать код');
+    });
 }
 
 async function renderSurgeries(page = 1) {
