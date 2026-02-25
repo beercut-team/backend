@@ -27,7 +27,7 @@ func (s *syncService) Push(ctx context.Context, userID uint, req domain.SyncPush
 	for _, m := range req.Mutations {
 		clientTime, err := time.Parse(time.RFC3339, m.ClientTime)
 		if err != nil {
-			return errors.New("invalid client_time format, use ISO 8601")
+			return errors.New("неверный формат client_time, используйте ISO 8601")
 		}
 
 		payload, _ := json.Marshal(m.Payload)
@@ -42,7 +42,7 @@ func (s *syncService) Push(ctx context.Context, userID uint, req domain.SyncPush
 		}
 
 		if err := s.repo.Create(ctx, entry); err != nil {
-			return errors.New("failed to push sync entry")
+			return errors.New("не удалось отправить запись синхронизации")
 		}
 	}
 	return nil
@@ -51,7 +51,7 @@ func (s *syncService) Push(ctx context.Context, userID uint, req domain.SyncPush
 func (s *syncService) Pull(ctx context.Context, userID uint, since string) (*domain.SyncPullResponse, error) {
 	sinceTime, err := time.Parse(time.RFC3339, since)
 	if err != nil {
-		return nil, errors.New("invalid since format, use ISO 8601")
+		return nil, errors.New("неверный формат since, используйте ISO 8601")
 	}
 
 	changes, err := s.repo.FindChangesSince(ctx, userID, sinceTime)

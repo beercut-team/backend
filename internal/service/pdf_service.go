@@ -27,12 +27,12 @@ func NewPDFService(patientRepo repository.PatientRepository, checklistRepo repos
 func (s *pdfService) GenerateRoutingSheet(ctx context.Context, patientID uint) (*bytes.Buffer, error) {
 	patient, err := s.patientRepo.FindByID(ctx, patientID)
 	if err != nil {
-		return nil, fmt.Errorf("patient not found: %w", err)
+		return nil, fmt.Errorf("пациент не найден: %w", err)
 	}
 
 	items, err := s.checklistRepo.FindItemsByPatient(ctx, patientID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load checklist: %w", err)
+		return nil, fmt.Errorf("не удалось загрузить чек-лист: %w", err)
 	}
 
 	pdf := fpdf.New("P", "mm", "A4", "")
@@ -88,7 +88,7 @@ func (s *pdfService) GenerateRoutingSheet(ctx context.Context, patientID uint) (
 
 	var buf bytes.Buffer
 	if err := pdf.Output(&buf); err != nil {
-		return nil, fmt.Errorf("failed to generate PDF: %w", err)
+		return nil, fmt.Errorf("не удалось сгенерировать PDF: %w", err)
 	}
 	return &buf, nil
 }
@@ -96,12 +96,12 @@ func (s *pdfService) GenerateRoutingSheet(ctx context.Context, patientID uint) (
 func (s *pdfService) GenerateChecklistReport(ctx context.Context, patientID uint) (*bytes.Buffer, error) {
 	patient, err := s.patientRepo.FindByID(ctx, patientID)
 	if err != nil {
-		return nil, fmt.Errorf("patient not found: %w", err)
+		return nil, fmt.Errorf("пациент не найден: %w", err)
 	}
 
 	items, err := s.checklistRepo.FindItemsByPatient(ctx, patientID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load checklist: %w", err)
+		return nil, fmt.Errorf("не удалось загрузить чек-лист: %w", err)
 	}
 
 	pdf := fpdf.New("P", "mm", "A4", "")
@@ -148,7 +148,7 @@ func (s *pdfService) GenerateChecklistReport(ctx context.Context, patientID uint
 
 	var buf bytes.Buffer
 	if err := pdf.Output(&buf); err != nil {
-		return nil, fmt.Errorf("failed to generate PDF: %w", err)
+		return nil, fmt.Errorf("не удалось сгенерировать PDF: %w", err)
 	}
 	return &buf, nil
 }

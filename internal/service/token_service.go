@@ -48,27 +48,27 @@ func (s *tokenService) GenerateRefreshToken(userID uint) (string, error) {
 func (s *tokenService) ValidateAccessToken(tokenStr string) (uint, domain.Role, error) {
 	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+			return nil, fmt.Errorf("неожиданный метод подписи: %v", t.Header["alg"])
 		}
 		return []byte(s.cfg.JWTAccessSecret), nil
 	})
 	if err != nil {
-		return 0, "", fmt.Errorf("invalid token: %w", err)
+		return 0, "", fmt.Errorf("недействительный токен: %w", err)
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
-		return 0, "", fmt.Errorf("invalid token claims")
+		return 0, "", fmt.Errorf("недействительные данные токена")
 	}
 
 	tokenType, _ := claims["type"].(string)
 	if tokenType != "access" {
-		return 0, "", fmt.Errorf("invalid token type")
+		return 0, "", fmt.Errorf("недействительный тип токена")
 	}
 
 	userIDFloat, ok := claims["user_id"].(float64)
 	if !ok {
-		return 0, "", fmt.Errorf("invalid user_id in token")
+		return 0, "", fmt.Errorf("недействительный user_id в токене")
 	}
 
 	roleStr, _ := claims["role"].(string)
@@ -79,27 +79,27 @@ func (s *tokenService) ValidateAccessToken(tokenStr string) (uint, domain.Role, 
 func (s *tokenService) ValidateRefreshToken(tokenStr string) (uint, error) {
 	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+			return nil, fmt.Errorf("неожиданный метод подписи: %v", t.Header["alg"])
 		}
 		return []byte(s.cfg.JWTRefreshSecret), nil
 	})
 	if err != nil {
-		return 0, fmt.Errorf("invalid token: %w", err)
+		return 0, fmt.Errorf("недействительный токен: %w", err)
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
-		return 0, fmt.Errorf("invalid token claims")
+		return 0, fmt.Errorf("недействительные данные токена")
 	}
 
 	tokenType, _ := claims["type"].(string)
 	if tokenType != "refresh" {
-		return 0, fmt.Errorf("invalid token type")
+		return 0, fmt.Errorf("недействительный тип токена")
 	}
 
 	userIDFloat, ok := claims["user_id"].(float64)
 	if !ok {
-		return 0, fmt.Errorf("invalid user_id in token")
+		return 0, fmt.Errorf("недействительный user_id в токене")
 	}
 
 	return uint(userIDFloat), nil

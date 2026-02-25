@@ -34,7 +34,7 @@ func (s *patientService) Create(ctx context.Context, req domain.CreatePatientReq
 	if req.DateOfBirth != "" {
 		parsed, err := time.Parse("2006-01-02", req.DateOfBirth)
 		if err != nil {
-			return nil, errors.New("invalid date_of_birth format, use YYYY-MM-DD")
+			return nil, errors.New("неверный формат даты рождения, используйте ГГГГ-ММ-ДД")
 		}
 		dob = parsed
 	}
@@ -62,7 +62,7 @@ func (s *patientService) Create(ctx context.Context, req domain.CreatePatientReq
 	}
 
 	if err := s.repo.Create(ctx, patient); err != nil {
-		return nil, errors.New("failed to create patient")
+		return nil, errors.New("не удалось создать пациента")
 	}
 
 	// Auto-generate checklist
@@ -112,7 +112,7 @@ func (s *patientService) GetByID(ctx context.Context, id uint) (*domain.Patient,
 	p, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("patient not found")
+			return nil, errors.New("пациент не найден")
 		}
 		return nil, err
 	}
@@ -123,7 +123,7 @@ func (s *patientService) GetByAccessCode(ctx context.Context, code string) (*dom
 	p, err := s.repo.FindByAccessCode(ctx, code)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("patient not found")
+			return nil, errors.New("пациент не найден")
 		}
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func (s *patientService) Update(ctx context.Context, id uint, req domain.UpdateP
 	p, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("patient not found")
+			return nil, errors.New("пациент не найден")
 		}
 		return nil, err
 	}
@@ -191,7 +191,7 @@ func (s *patientService) Update(ctx context.Context, id uint, req domain.UpdateP
 	}
 
 	if err := s.repo.Update(ctx, p); err != nil {
-		return nil, errors.New("failed to update patient")
+		return nil, errors.New("не удалось обновить данные пациента")
 	}
 	return p, nil
 }
@@ -199,12 +199,12 @@ func (s *patientService) Update(ctx context.Context, id uint, req domain.UpdateP
 func (s *patientService) ChangeStatus(ctx context.Context, id uint, req domain.PatientStatusRequest, changedBy uint) error {
 	p, err := s.repo.FindByID(ctx, id)
 	if err != nil {
-		return errors.New("patient not found")
+		return errors.New("пациент не найден")
 	}
 
 	oldStatus := p.Status
 	if err := s.repo.UpdateStatus(ctx, id, req.Status); err != nil {
-		return errors.New("failed to update status")
+		return errors.New("не удалось обновить статус")
 	}
 
 	s.repo.CreateStatusHistory(ctx, &domain.PatientStatusHistory{

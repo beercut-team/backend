@@ -31,7 +31,7 @@ func (s *surgeryService) Schedule(ctx context.Context, req domain.CreateSurgeryR
 	patient, err := s.patientRepo.FindByID(ctx, req.PatientID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("patient not found")
+			return nil, errors.New("пациент не найден")
 		}
 		return nil, err
 	}
@@ -42,12 +42,12 @@ func (s *surgeryService) Schedule(ctx context.Context, req domain.CreateSurgeryR
 		return nil, err
 	}
 	if required != requiredCompleted {
-		return nil, errors.New("not all required checklist items are completed")
+		return nil, errors.New("не все обязательные пункты чек-листа выполнены")
 	}
 
 	date, err := time.Parse("2006-01-02", req.ScheduledDate)
 	if err != nil {
-		return nil, errors.New("invalid date format, use YYYY-MM-DD")
+		return nil, errors.New("неверный формат даты, используйте ГГГГ-ММ-ДД")
 	}
 
 	surgery := &domain.Surgery{
@@ -61,7 +61,7 @@ func (s *surgeryService) Schedule(ctx context.Context, req domain.CreateSurgeryR
 	}
 
 	if err := s.repo.Create(ctx, surgery); err != nil {
-		return nil, errors.New("failed to schedule surgery")
+		return nil, errors.New("не удалось запланировать операцию")
 	}
 
 	// Auto-transition patient
@@ -86,7 +86,7 @@ func (s *surgeryService) GetByID(ctx context.Context, id uint) (*domain.Surgery,
 	surgery, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("surgery not found")
+			return nil, errors.New("операция не найдена")
 		}
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (s *surgeryService) Update(ctx context.Context, id uint, req domain.UpdateS
 	surgery, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("surgery not found")
+			return nil, errors.New("операция не найдена")
 		}
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (s *surgeryService) Update(ctx context.Context, id uint, req domain.UpdateS
 	if req.ScheduledDate != nil {
 		date, err := time.Parse("2006-01-02", *req.ScheduledDate)
 		if err != nil {
-			return nil, errors.New("invalid date format")
+			return nil, errors.New("неверный формат даты")
 		}
 		surgery.ScheduledDate = date
 	}
@@ -121,7 +121,7 @@ func (s *surgeryService) Update(ctx context.Context, id uint, req domain.UpdateS
 	}
 
 	if err := s.repo.Update(ctx, surgery); err != nil {
-		return nil, errors.New("failed to update surgery")
+		return nil, errors.New("не удалось обновить операцию")
 	}
 	return surgery, nil
 }

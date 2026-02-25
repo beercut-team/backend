@@ -37,7 +37,7 @@ func (s *districtService) Create(ctx context.Context, req domain.CreateDistrictR
 		Timezone: tz,
 	}
 	if err := s.repo.Create(ctx, district); err != nil {
-		return nil, errors.New("failed to create district")
+		return nil, errors.New("не удалось создать район")
 	}
 	return district, nil
 }
@@ -46,7 +46,7 @@ func (s *districtService) GetByID(ctx context.Context, id uint) (*domain.Distric
 	d, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("district not found")
+			return nil, errors.New("район не найден")
 		}
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (s *districtService) Update(ctx context.Context, id uint, req domain.Update
 	d, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("district not found")
+			return nil, errors.New("район не найден")
 		}
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (s *districtService) Update(ctx context.Context, id uint, req domain.Update
 	}
 
 	if err := s.repo.Update(ctx, d); err != nil {
-		return nil, errors.New("failed to update district")
+		return nil, errors.New("не удалось обновить район")
 	}
 	return d, nil
 }
@@ -89,7 +89,7 @@ func (s *districtService) Delete(ctx context.Context, id uint) error {
 	_, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("district not found")
+			return errors.New("район не найден")
 		}
 		return err
 	}

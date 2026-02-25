@@ -69,11 +69,11 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 
 	if err := h.authService.Logout(c.Request.Context(), userID); err != nil {
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Error: "failed to logout"})
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Error: "не удалось выйти из системы"})
 		return
 	}
 
-	c.JSON(http.StatusOK, domain.MessageResponse{Message: "logged out"})
+	c.JSON(http.StatusOK, domain.MessageResponse{Message: "вы вышли из системы"})
 }
 
 func (h *AuthHandler) Me(c *gin.Context) {

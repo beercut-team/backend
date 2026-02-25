@@ -36,7 +36,7 @@ func (h *DistrictHandler) Create(c *gin.Context) {
 func (h *DistrictHandler) GetByID(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid id")
+		BadRequest(c, "неверный id")
 		return
 	}
 
@@ -55,7 +55,7 @@ func (h *DistrictHandler) List(c *gin.Context) {
 
 	districts, total, err := h.svc.List(c.Request.Context(), search, p.Offset(), p.Limit)
 	if err != nil {
-		InternalError(c, "failed to list districts")
+		InternalError(c, "не удалось получить список районов")
 		return
 	}
 
@@ -65,7 +65,7 @@ func (h *DistrictHandler) List(c *gin.Context) {
 func (h *DistrictHandler) Update(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid id")
+		BadRequest(c, "неверный id")
 		return
 	}
 
@@ -87,7 +87,7 @@ func (h *DistrictHandler) Update(c *gin.Context) {
 func (h *DistrictHandler) Delete(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		BadRequest(c, "invalid id")
+		BadRequest(c, "неверный id")
 		return
 	}
 
@@ -96,5 +96,5 @@ func (h *DistrictHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	Success(c, http.StatusOK, domain.MessageResponse{Message: "district deleted"})
+	Success(c, http.StatusOK, domain.MessageResponse{Message: "район удалён"})
 }

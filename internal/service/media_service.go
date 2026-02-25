@@ -43,10 +43,10 @@ func NewMediaService(repo repository.MediaRepository, store storage.Storage) Med
 
 func (s *mediaService) Upload(ctx context.Context, patientID, uploadedBy uint, fileName, contentType, category string, size int64, reader io.Reader) (*domain.Media, error) {
 	if !allowedTypes[contentType] {
-		return nil, errors.New("file type not allowed, accepted: jpg, png, pdf")
+		return nil, errors.New("тип файла не разрешён, допустимые: jpg, png, pdf")
 	}
 	if size > maxFileSize {
-		return nil, errors.New("file too large, max 20MB")
+		return nil, errors.New("файл слишком большой, максимум 20МБ")
 	}
 
 	ext := filepath.Ext(fileName)
@@ -54,7 +54,7 @@ func (s *mediaService) Upload(ctx context.Context, patientID, uploadedBy uint, f
 	storagePath := fmt.Sprintf("%d/%s/%s%s", patientID, category, uid, ext)
 
 	if err := s.storage.Upload(ctx, storagePath, reader, size, contentType); err != nil {
-		return nil, fmt.Errorf("failed to upload file: %w", err)
+		return nil, fmt.Errorf("не удалось загрузить файл: %w", err)
 	}
 
 	// Generate thumbnail for images
@@ -76,7 +76,7 @@ func (s *mediaService) Upload(ctx context.Context, patientID, uploadedBy uint, f
 	}
 
 	if err := s.repo.Create(ctx, media); err != nil {
-		return nil, errors.New("failed to save media record")
+		return nil, errors.New("не удалось сохранить запись медиа")
 	}
 
 	return media, nil
@@ -86,7 +86,7 @@ func (s *mediaService) GetByID(ctx context.Context, id uint) (*domain.Media, err
 	m, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("media not found")
+			return nil, errors.New("медиафайл не найден")
 		}
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func (s *mediaService) GetByPatient(ctx context.Context, patientID uint) ([]doma
 func (s *mediaService) Delete(ctx context.Context, id uint) error {
 	m, err := s.repo.FindByID(ctx, id)
 	if err != nil {
-		return errors.New("media not found")
+		return errors.New("медиафайл не найден")
 	}
 
 	s.storage.Delete(ctx, m.StoragePath)
@@ -114,7 +114,7 @@ func (s *mediaService) Delete(ctx context.Context, id uint) error {
 func (s *mediaService) GetDownloadURL(ctx context.Context, id uint) (string, error) {
 	m, err := s.repo.FindByID(ctx, id)
 	if err != nil {
-		return "", errors.New("media not found")
+		return "", errors.New("медиафайл не найден")
 	}
 	return s.storage.PresignedURL(ctx, m.StoragePath)
 }
@@ -122,10 +122,10 @@ func (s *mediaService) GetDownloadURL(ctx context.Context, id uint) (string, err
 func (s *mediaService) GetThumbnailURL(ctx context.Context, id uint) (string, error) {
 	m, err := s.repo.FindByID(ctx, id)
 	if err != nil {
-		return "", errors.New("media not found")
+		return "", errors.New("медиафайл не найден")
 	}
 	if m.ThumbnailPath == "" {
-		return "", errors.New("no thumbnail available")
+		return "", errors.New("миниатюра недоступна")
 	}
 	return s.storage.PresignedURL(ctx, m.ThumbnailPath)
 }

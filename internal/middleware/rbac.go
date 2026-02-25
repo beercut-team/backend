@@ -18,7 +18,7 @@ func RequireRole(roles ...domain.Role) gin.HandlerFunc {
 				return
 			}
 		}
-		c.AbortWithStatusJSON(http.StatusForbidden, domain.ErrorResponse{Error: "insufficient permissions"})
+		c.AbortWithStatusJSON(http.StatusForbidden, domain.ErrorResponse{Error: "недостаточно прав доступа"})
 	}
 }
 

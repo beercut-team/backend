@@ -32,7 +32,7 @@ func (s *commentService) Create(ctx context.Context, req domain.CreateCommentReq
 	}
 
 	if err := s.repo.Create(ctx, comment); err != nil {
-		return nil, errors.New("failed to create comment")
+		return nil, errors.New("не удалось создать комментарий")
 	}
 
 	return comment, nil

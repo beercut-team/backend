@@ -43,7 +43,7 @@ func (s *checklistService) UpdateItem(ctx context.Context, id uint, req domain.U
 	item, err := s.repo.FindItemByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("checklist item not found")
+			return nil, errors.New("элемент чек-листа не найден")
 		}
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (s *checklistService) UpdateItem(ctx context.Context, id uint, req domain.U
 	}
 
 	if err := s.repo.UpdateItem(ctx, item); err != nil {
-		return nil, errors.New("failed to update checklist item")
+		return nil, errors.New("не удалось обновить элемент чек-листа")
 	}
 
 	// Check if all required items are completed
@@ -78,14 +78,14 @@ func (s *checklistService) ReviewItem(ctx context.Context, id uint, req domain.R
 	item, err := s.repo.FindItemByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("checklist item not found")
+			return nil, errors.New("элемент чек-листа не найден")
 		}
 		return nil, err
 	}
 
 	status := domain.ChecklistItemStatus(req.Status)
 	if status != domain.ChecklistStatusCompleted && status != domain.ChecklistStatusRejected {
-		return nil, errors.New("review status must be COMPLETED or REJECTED")
+		return nil, errors.New("статус проверки должен быть COMPLETED или REJECTED")
 	}
 
 	item.Status = status
@@ -98,7 +98,7 @@ func (s *checklistService) ReviewItem(ctx context.Context, id uint, req domain.R
 	}
 
 	if err := s.repo.UpdateItem(ctx, item); err != nil {
-		return nil, errors.New("failed to review checklist item")
+		return nil, errors.New("не удалось проверить элемент чек-листа")
 	}
 
 	s.CheckAndTransition(ctx, item.PatientID)

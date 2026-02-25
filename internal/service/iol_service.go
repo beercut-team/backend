@@ -50,13 +50,13 @@ func (s *iolService) Calculate(ctx context.Context, req domain.IOLCalculationReq
 		power, predictedRef = formulas.SRKT(req.AxialLength, avgK, aConst, req.TargetRefraction)
 	case "HAIGIS":
 		if req.ACD == 0 {
-			return nil, errors.New("ACD is required for Haigis formula")
+			return nil, errors.New("ACD обязателен для формулы Haigis")
 		}
 		power, predictedRef = formulas.Haigis(req.AxialLength, avgK, req.ACD, req.TargetRefraction)
 	case "HOFFERQ", "HOFFER_Q":
 		power, predictedRef = formulas.HofferQ(req.AxialLength, avgK, req.ACD, req.TargetRefraction)
 	default:
-		return nil, errors.New("unsupported formula, use: SRKT, HAIGIS, or HOFFERQ")
+		return nil, errors.New("неподдерживаемая формула, используйте: SRKT, HAIGIS или HOFFERQ")
 	}
 
 	calc := &domain.IOLCalculation{
@@ -76,7 +76,7 @@ func (s *iolService) Calculate(ctx context.Context, req domain.IOLCalculationReq
 	}
 
 	if err := s.repo.Create(ctx, calc); err != nil {
-		return nil, errors.New("failed to save calculation")
+		return nil, errors.New("не удалось сохранить расчёт")
 	}
 
 	return calc, nil
