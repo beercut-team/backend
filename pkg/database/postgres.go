@@ -26,7 +26,22 @@ func NewPostgres(cfg *config.Config) (*gorm.DB, error) {
 
 	log.Info().Msg("connected to PostgreSQL")
 
-	if err := db.AutoMigrate(&domain.User{}); err != nil {
+	if err := db.AutoMigrate(
+		&domain.User{},
+		&domain.District{},
+		&domain.AuditLog{},
+		&domain.Patient{},
+		&domain.PatientStatusHistory{},
+		&domain.ChecklistTemplate{},
+		&domain.ChecklistItem{},
+		&domain.Media{},
+		&domain.IOLCalculation{},
+		&domain.Surgery{},
+		&domain.Comment{},
+		&domain.Notification{},
+		&domain.TelegramBinding{},
+		&domain.SyncQueue{},
+	); err != nil {
 		return nil, fmt.Errorf("auto-migrate failed: %w", err)
 	}
 

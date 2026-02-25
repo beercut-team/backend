@@ -1,13 +1,17 @@
 package server
 
 import (
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
 	"github.com/beercut-team/backend-boilerplate/internal/config"
+	"github.com/beercut-team/backend-boilerplate/internal/domain"
 	"github.com/beercut-team/backend-boilerplate/internal/handler"
 	"github.com/beercut-team/backend-boilerplate/internal/middleware"
 	"github.com/beercut-team/backend-boilerplate/internal/repository"
 	"github.com/beercut-team/backend-boilerplate/internal/service"
+	"github.com/beercut-team/backend-boilerplate/pkg/storage"
+	"github.com/beercut-team/backend-boilerplate/pkg/telegram"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -21,11 +25,73 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		AllowCredentials: true,
 	}))
 
-	// --- DI wiring ---
+	// --- Repositories ---
 	userRepo := repository.NewUserRepository(db)
+	districtRepo := repository.NewDistrictRepository(db)
+	auditRepo := repository.NewAuditRepository(db)
+	patientRepo := repository.NewPatientRepository(db)
+	checklistRepo := repository.NewChecklistRepository(db)
+	mediaRepo := repository.NewMediaRepository(db)
+	iolRepo := repository.NewIOLRepository(db)
+	surgeryRepo := repository.NewSurgeryRepository(db)
+	commentRepo := repository.NewCommentRepository(db)
+	notifRepo := repository.NewNotificationRepository(db)
+	telegramRepo := repository.NewTelegramRepository(db)
+	syncRepo := repository.NewSyncRepository(db)
+	_ = auditRepo
+
+	// --- Storage ---
+	var store storage.Storage
+	if cfg.StorageMode == "minio" {
+		var err error
+		store, err = storage.NewMinIOStorage(cfg)
+		if err != nil {
+			log.Warn().Err(err).Msg("MinIO unavailable, falling back to local storage")
+			store = storage.NewLocalStorage(cfg.LocalUploadPath)
+		}
+	} else {
+		store = storage.NewLocalStorage(cfg.LocalUploadPath)
+	}
+
+	// --- Services ---
 	tokenService := service.NewTokenService(cfg)
 	authService := service.NewAuthService(userRepo, tokenService)
+	districtService := service.NewDistrictService(districtRepo)
+	patientService := service.NewPatientService(patientRepo, checklistRepo)
+	checklistService := service.NewChecklistService(checklistRepo, patientRepo)
+	mediaService := service.NewMediaService(mediaRepo, store)
+	iolService := service.NewIOLService(iolRepo)
+	surgeryService := service.NewSurgeryService(surgeryRepo, patientRepo, checklistRepo)
+	commentService := service.NewCommentService(commentRepo)
+	notifService := service.NewNotificationService(notifRepo)
+	pdfService := service.NewPDFService(patientRepo, checklistRepo)
+	syncService := service.NewSyncService(syncRepo)
+
+	// --- Scheduler ---
+	scheduler := service.NewSchedulerService(checklistRepo, surgeryRepo, notifRepo, mediaRepo)
+	scheduler.Start()
+
+	// --- Telegram Bot ---
+	bot, err := telegram.NewBot(cfg.TelegramBotToken, patientRepo, telegramRepo)
+	if err != nil {
+		log.Warn().Err(err).Msg("Telegram bot failed to start")
+	}
+	if bot != nil {
+		bot.Start()
+	}
+
+	// --- Handlers ---
 	authHandler := handler.NewAuthHandler(authService)
+	districtHandler := handler.NewDistrictHandler(districtService)
+	patientHandler := handler.NewPatientHandler(patientService)
+	checklistHandler := handler.NewChecklistHandler(checklistService)
+	mediaHandler := handler.NewMediaHandler(mediaService)
+	iolHandler := handler.NewIOLHandler(iolService)
+	surgeryHandler := handler.NewSurgeryHandler(surgeryService)
+	commentHandler := handler.NewCommentHandler(commentService)
+	notifHandler := handler.NewNotificationHandler(notifService)
+	printHandler := handler.NewPrintHandler(pdfService)
+	syncHandler := handler.NewSyncHandler(syncService)
 
 	// --- Serve OpenAPI docs ---
 	r.StaticFile("/openapi.json", "./openapi.json")
@@ -44,16 +110,111 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 			auth.POST("/refresh", authHandler.Refresh)
 		}
 
+		// Public patient status
+		api.GET("/patients/public/:accessCode", patientHandler.GetPublic)
+
 		// Protected routes
 		protected := api.Group("")
 		protected.Use(middleware.Auth(tokenService))
 		{
+			// Auth
 			protected.GET("/auth/me", authHandler.Me)
 			protected.POST("/auth/logout", authHandler.Logout)
 			protected.GET("/ping", func(c *gin.Context) {
 				userID := middleware.GetUserID(c)
 				c.JSON(200, gin.H{"message": "pong", "user_id": userID})
 			})
+
+			// Districts (ADMIN only for mutations)
+			districts := protected.Group("/districts")
+			{
+				districts.GET("", districtHandler.List)
+				districts.GET("/:id", districtHandler.GetByID)
+				adminDistricts := districts.Group("")
+				adminDistricts.Use(middleware.RequireRole(domain.RoleAdmin))
+				{
+					adminDistricts.POST("", districtHandler.Create)
+					adminDistricts.PATCH("/:id", districtHandler.Update)
+					adminDistricts.DELETE("/:id", districtHandler.Delete)
+				}
+			}
+
+			// Patients
+			patients := protected.Group("/patients")
+			{
+				patients.GET("", patientHandler.List)
+				patients.GET("/dashboard", patientHandler.Dashboard)
+				patients.GET("/:id", patientHandler.GetByID)
+				patients.POST("", middleware.RequireRole(domain.RoleDistrictDoctor, domain.RoleAdmin), patientHandler.Create)
+				patients.PATCH("/:id", patientHandler.Update)
+				patients.POST("/:id/status", patientHandler.ChangeStatus)
+			}
+
+			// Checklists
+			checklists := protected.Group("/checklists")
+			{
+				checklists.GET("/patient/:patientId", checklistHandler.GetByPatient)
+				checklists.GET("/patient/:patientId/progress", checklistHandler.GetProgress)
+				checklists.PATCH("/:id", checklistHandler.UpdateItem)
+				checklists.POST("/:id/review", middleware.RequireRole(domain.RoleSurgeon, domain.RoleAdmin), checklistHandler.ReviewItem)
+			}
+
+			// Media
+			media := protected.Group("/media")
+			{
+				media.POST("/upload", mediaHandler.Upload)
+				media.GET("/patient/:patientId", mediaHandler.GetByPatient)
+				media.GET("/:id/download", mediaHandler.Download)
+				media.GET("/:id/thumbnail", mediaHandler.Thumbnail)
+				media.DELETE("/:id", mediaHandler.Delete)
+			}
+
+			// IOL Calculator
+			iol := protected.Group("/iol")
+			{
+				iol.POST("/calculate", iolHandler.Calculate)
+				iol.GET("/patient/:patientId/history", iolHandler.History)
+			}
+
+			// Surgeries (SURGEON only for creation)
+			surgeries := protected.Group("/surgeries")
+			{
+				surgeries.GET("", surgeryHandler.List)
+				surgeries.GET("/:id", surgeryHandler.GetByID)
+				surgeries.POST("", middleware.RequireRole(domain.RoleSurgeon, domain.RoleAdmin), surgeryHandler.Schedule)
+				surgeries.PATCH("/:id", middleware.RequireRole(domain.RoleSurgeon, domain.RoleAdmin), surgeryHandler.Update)
+			}
+
+			// Comments
+			comments := protected.Group("/comments")
+			{
+				comments.POST("", commentHandler.Create)
+				comments.GET("/patient/:patientId", commentHandler.GetByPatient)
+				comments.POST("/patient/:patientId/read", commentHandler.MarkAsRead)
+			}
+
+			// Notifications
+			notifications := protected.Group("/notifications")
+			{
+				notifications.GET("", notifHandler.List)
+				notifications.GET("/unread-count", notifHandler.UnreadCount)
+				notifications.POST("/:id/read", notifHandler.MarkAsRead)
+				notifications.POST("/read-all", notifHandler.MarkAllAsRead)
+			}
+
+			// Print / PDF
+			print := protected.Group("/print")
+			{
+				print.GET("/patient/:patientId/routing-sheet", printHandler.RoutingSheet)
+				print.GET("/patient/:patientId/checklist-report", printHandler.ChecklistReport)
+			}
+
+			// Sync
+			sync := protected.Group("/sync")
+			{
+				sync.POST("/push", syncHandler.Push)
+				sync.GET("/pull", syncHandler.Pull)
+			}
 		}
 	}
 

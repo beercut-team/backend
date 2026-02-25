@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/beercut-team/backend-boilerplate/internal/domain"
 	"github.com/beercut-team/backend-boilerplate/internal/service"
+	"github.com/gin-gonic/gin"
 )
 
 const userIDKey = "user_id"
@@ -25,13 +25,14 @@ func Auth(tokenService service.TokenService) gin.HandlerFunc {
 			return
 		}
 
-		userID, err := tokenService.ValidateAccessToken(parts[1])
+		userID, role, err := tokenService.ValidateAccessToken(parts[1])
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, domain.ErrorResponse{Error: "invalid or expired token"})
 			return
 		}
 
 		c.Set(userIDKey, userID)
+		SetUserRole(c, role)
 		c.Next()
 	}
 }

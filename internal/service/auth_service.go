@@ -41,10 +41,24 @@ func (s *authService) Register(ctx context.Context, req domain.RegisterRequest) 
 		return nil, errors.New("failed to hash password")
 	}
 
+	role := req.Role
+	if role == "" {
+		role = domain.RolePatient
+	}
+	if !domain.ValidRole(role) {
+		return nil, errors.New("invalid role")
+	}
+
 	user := &domain.User{
 		Email:        req.Email,
 		PasswordHash: string(hash),
 		Name:         req.Name,
+		FirstName:    req.FirstName,
+		LastName:     req.LastName,
+		MiddleName:   req.MiddleName,
+		Phone:        req.Phone,
+		Role:         role,
+		IsActive:     true,
 	}
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
@@ -58,6 +72,10 @@ func (s *authService) Login(ctx context.Context, req domain.LoginRequest) (*doma
 	user, err := s.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, errors.New("invalid email or password")
+	}
+
+	if !user.IsActive {
+		return nil, errors.New("account is deactivated")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
@@ -106,7 +124,7 @@ func (s *authService) Me(ctx context.Context, userID uint) (*domain.UserResponse
 }
 
 func (s *authService) generateTokens(ctx context.Context, user *domain.User) (*domain.AuthResponse, error) {
-	accessToken, err := s.tokenService.GenerateAccessToken(user.ID)
+	accessToken, err := s.tokenService.GenerateAccessToken(user.ID, user.Role)
 	if err != nil {
 		return nil, errors.New("failed to generate access token")
 	}

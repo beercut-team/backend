@@ -4,14 +4,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/beercut-team/backend-boilerplate/internal/config"
+	"github.com/beercut-team/backend-boilerplate/internal/domain"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type TokenService interface {
-	GenerateAccessToken(userID uint) (string, error)
+	GenerateAccessToken(userID uint, role domain.Role) (string, error)
 	GenerateRefreshToken(userID uint) (string, error)
-	ValidateAccessToken(tokenStr string) (uint, error)
+	ValidateAccessToken(tokenStr string) (uint, domain.Role, error)
 	ValidateRefreshToken(tokenStr string) (uint, error)
 }
 
@@ -23,9 +24,10 @@ func NewTokenService(cfg *config.Config) TokenService {
 	return &tokenService{cfg: cfg}
 }
 
-func (s *tokenService) GenerateAccessToken(userID uint) (string, error) {
+func (s *tokenService) GenerateAccessToken(userID uint, role domain.Role) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,
+		"role":    string(role),
 		"exp":     time.Now().Add(time.Duration(s.cfg.JWTAccessExpiryMin) * time.Minute).Unix(),
 		"type":    "access",
 	}
@@ -43,20 +45,43 @@ func (s *tokenService) GenerateRefreshToken(userID uint) (string, error) {
 	return token.SignedString([]byte(s.cfg.JWTRefreshSecret))
 }
 
-func (s *tokenService) ValidateAccessToken(tokenStr string) (uint, error) {
-	return s.validateToken(tokenStr, s.cfg.JWTAccessSecret, "access")
-}
-
-func (s *tokenService) ValidateRefreshToken(tokenStr string) (uint, error) {
-	return s.validateToken(tokenStr, s.cfg.JWTRefreshSecret, "refresh")
-}
-
-func (s *tokenService) validateToken(tokenStr, secret, expectedType string) (uint, error) {
+func (s *tokenService) ValidateAccessToken(tokenStr string) (uint, domain.Role, error) {
 	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
-		return []byte(secret), nil
+		return []byte(s.cfg.JWTAccessSecret), nil
+	})
+	if err != nil {
+		return 0, "", fmt.Errorf("invalid token: %w", err)
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return 0, "", fmt.Errorf("invalid token claims")
+	}
+
+	tokenType, _ := claims["type"].(string)
+	if tokenType != "access" {
+		return 0, "", fmt.Errorf("invalid token type")
+	}
+
+	userIDFloat, ok := claims["user_id"].(float64)
+	if !ok {
+		return 0, "", fmt.Errorf("invalid user_id in token")
+	}
+
+	roleStr, _ := claims["role"].(string)
+
+	return uint(userIDFloat), domain.Role(roleStr), nil
+}
+
+func (s *tokenService) ValidateRefreshToken(tokenStr string) (uint, error) {
+	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+		}
+		return []byte(s.cfg.JWTRefreshSecret), nil
 	})
 	if err != nil {
 		return 0, fmt.Errorf("invalid token: %w", err)
@@ -68,7 +93,7 @@ func (s *tokenService) validateToken(tokenStr, secret, expectedType string) (uin
 	}
 
 	tokenType, _ := claims["type"].(string)
-	if tokenType != expectedType {
+	if tokenType != "refresh" {
 		return 0, fmt.Errorf("invalid token type")
 	}
 
