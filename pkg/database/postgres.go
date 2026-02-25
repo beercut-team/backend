@@ -1,0 +1,35 @@
+package database
+
+import (
+	"fmt"
+
+	"github.com/beercut-team/backend-boilerplate/internal/config"
+	"github.com/beercut-team/backend-boilerplate/internal/domain"
+	"github.com/rs/zerolog/log"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+)
+
+func NewPostgres(cfg *config.Config) (*gorm.DB, error) {
+	dsn := fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBSSLMode,
+	)
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	log.Info().Msg("connected to PostgreSQL")
+
+	if err := db.AutoMigrate(&domain.User{}); err != nil {
+		return nil, fmt.Errorf("auto-migrate failed: %w", err)
+	}
+
+	log.Info().Msg("database migrated")
+	return db, nil
+}

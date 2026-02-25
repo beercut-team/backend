@@ -1,0 +1,113 @@
+name: CI Backend
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    runs-on: self-hosted
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test ./... -v
+        env:
+          DB_HOST: localhost
+          DB_PORT: "5433"
+          DB_USER: test
+          DB_PASSWORD: test
+          DB_NAME: test
+          DB_SSLMODE: disable
+
+  build:
+    name: Build Docker Image
+    runs-on: self-hosted
+    needs: [test]
+    env:
+      IMAGE_NAME: peak-it-backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: |
+          docker build \
+            -t $IMAGE_NAME:${{ github.sha }} \
+            -t $IMAGE_NAME:latest \
+            .
+
+  deploy:
+    name: Deploy
+    runs-on: self-hosted
+    needs: [build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    env:
+      IMAGE_NAME: peak-it-backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run migrations
+        run: |
+          docker run --rm \
+            --network app-network \
+            -v ${{ github.workspace }}/migrations:/migrations \
+            migrate/migrate \
+            -path=/migrations \
+            -database="postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@postgres:5432/${{ secrets.DB_NAME }}?sslmode=disable" up
+
+      - name: Stop old container
+        run: docker stop $IMAGE_NAME 2>/dev/null || true
+
+      - name: Remove old container
+        run: docker rm $IMAGE_NAME 2>/dev/null || true
+
+      - name: Run container
+        run: |
+          docker run -d \
+            --name "$IMAGE_NAME" \
+            --network app-network \
+            --restart unless-stopped \
+            -p 8080:8080 \
+            -e "DB_HOST=postgres" \
+            -e "DB_PORT=5432" \
+            -e "DB_USER=${{ secrets.DB_USER }}" \
+            -e "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" \
+            -e "DB_NAME=${{ secrets.DB_NAME }}" \
+            -e "DB_SSLMODE=disable" \
+            -e "JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }}" \
+            -e "JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}" \
+            -e "APP_PORT=8080" \
+            -e "LOG_LEVEL=info" \
+            "$IMAGE_NAME:${{ github.sha }}"
+
+      - name: Cleanup old images
+        run: docker image prune -f
