@@ -26,6 +26,7 @@ type User struct {
 	District       *District `gorm:"foreignKey:DistrictID" json:"district,omitempty"`
 	Specialization string    `json:"specialization"`
 	LicenseNumber  string    `json:"license_number"`
+	TelegramChatID *int64    `gorm:"index" json:"telegram_chat_id,omitempty"`
 	IsActive       bool      `gorm:"default:true;not null" json:"is_active"`
 	RefreshToken   string    `gorm:"index" json:"-"`
 	CreatedAt      time.Time `json:"created_at"`

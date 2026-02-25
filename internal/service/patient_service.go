@@ -7,6 +7,7 @@ import (
 
 	"github.com/beercut-team/backend-boilerplate/internal/domain"
 	"github.com/beercut-team/backend-boilerplate/internal/repository"
+	"github.com/beercut-team/backend-boilerplate/pkg/telegram"
 	"gorm.io/gorm"
 )
 
@@ -23,10 +24,11 @@ type PatientService interface {
 type patientService struct {
 	repo          repository.PatientRepository
 	checklistRepo repository.ChecklistRepository
+	bot           *telegram.Bot
 }
 
-func NewPatientService(repo repository.PatientRepository, checklistRepo repository.ChecklistRepository) PatientService {
-	return &patientService{repo: repo, checklistRepo: checklistRepo}
+func NewPatientService(repo repository.PatientRepository, checklistRepo repository.ChecklistRepository, bot *telegram.Bot) PatientService {
+	return &patientService{repo: repo, checklistRepo: checklistRepo, bot: bot}
 }
 
 func (s *patientService) Create(ctx context.Context, req domain.CreatePatientRequest, doctorID uint) (*domain.Patient, error) {
@@ -78,6 +80,12 @@ func (s *patientService) Create(ctx context.Context, req domain.CreatePatientReq
 		ChangedBy:  doctorID,
 		Comment:    "Пациент создан, чек-лист сгенерирован",
 	})
+
+	// Уведомить врача о новом пациенте
+	if s.bot != nil {
+		patientName := patient.FirstName + " " + patient.LastName
+		s.bot.NotifyDoctorNewPatient(ctx, doctorID, patientName)
+	}
 
 	return patient, nil
 }
@@ -214,6 +222,16 @@ func (s *patientService) ChangeStatus(ctx context.Context, id uint, req domain.P
 		ChangedBy:  changedBy,
 		Comment:    req.Comment,
 	})
+
+	// Отправить уведомление пациенту через Telegram
+	if s.bot != nil {
+		s.bot.NotifyPatientStatusChange(ctx, id, string(req.Status))
+
+		// Если статус изменился на REVIEW_NEEDED, уведомить хирургов
+		if req.Status == domain.PatientStatusReviewNeeded {
+			s.bot.NotifySurgeonReviewNeeded(ctx, id)
+		}
+	}
 
 	return nil
 }

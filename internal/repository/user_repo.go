@@ -12,6 +12,8 @@ type UserRepository interface {
 	FindAll(ctx context.Context) ([]domain.User, error)
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 	FindByID(ctx context.Context, id uint) (*domain.User, error)
+	FindByChatID(ctx context.Context, chatID int64) (*domain.User, error)
+	Update(ctx context.Context, user *domain.User) error
 	UpdateRefreshToken(ctx context.Context, userID uint, token string) error
 }
 
@@ -53,4 +55,16 @@ func (r *userRepository) FindByID(ctx context.Context, id uint) (*domain.User, e
 
 func (r *userRepository) UpdateRefreshToken(ctx context.Context, userID uint, token string) error {
 	return r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", userID).Update("refresh_token", token).Error
+}
+
+func (r *userRepository) FindByChatID(ctx context.Context, chatID int64) (*domain.User, error) {
+	var user domain.User
+	if err := r.db.WithContext(ctx).Where("telegram_chat_id = ?", chatID).First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
+	return r.db.WithContext(ctx).Save(user).Error
 }

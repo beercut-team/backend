@@ -53,11 +53,20 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		store = storage.NewLocalStorage(cfg.LocalUploadPath)
 	}
 
+	// --- Telegram Bot (создаём рано, чтобы передать в сервисы) ---
+	bot, err := telegram.NewBot(cfg.TelegramBotToken, patientRepo, telegramRepo, userRepo)
+	if err != nil {
+		log.Warn().Err(err).Msg("Telegram bot failed to start")
+	}
+	if bot != nil {
+		bot.Start()
+	}
+
 	// --- Services ---
 	tokenService := service.NewTokenService(cfg)
 	authService := service.NewAuthService(userRepo, tokenService)
 	districtService := service.NewDistrictService(districtRepo)
-	patientService := service.NewPatientService(patientRepo, checklistRepo)
+	patientService := service.NewPatientService(patientRepo, checklistRepo, bot)
 	checklistService := service.NewChecklistService(checklistRepo, patientRepo)
 	mediaService := service.NewMediaService(mediaRepo, store)
 	iolService := service.NewIOLService(iolRepo)
@@ -70,15 +79,6 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	// --- Scheduler ---
 	scheduler := service.NewSchedulerService(checklistRepo, surgeryRepo, notifRepo, mediaRepo)
 	scheduler.Start()
-
-	// --- Telegram Bot ---
-	bot, err := telegram.NewBot(cfg.TelegramBotToken, patientRepo, telegramRepo)
-	if err != nil {
-		log.Warn().Err(err).Msg("Telegram bot failed to start")
-	}
-	if bot != nil {
-		bot.Start()
-	}
 
 	// --- Handlers ---
 	authHandler := handler.NewAuthHandler(authService)
