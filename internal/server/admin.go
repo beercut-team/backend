@@ -20,12 +20,45 @@ const adminHTML = `<!DOCTYPE html>
 <script>
 const API = '/api/v1';
 let token = localStorage.getItem('admin_token') || '';
+let refreshToken = localStorage.getItem('admin_refresh_token') || '';
 let currentTab = 'dashboard';
+let isRefreshing = false;
+
+async function refreshAccessToken() {
+    if (isRefreshing) return;
+    isRefreshing = true;
+    try {
+        const response = await fetch(API + '/auth/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: refreshToken })
+        });
+        if (!response.ok) throw new Error('Refresh failed');
+        const data = await response.json();
+        token = data.access_token;
+        refreshToken = data.refresh_token;
+        localStorage.setItem('admin_token', token);
+        localStorage.setItem('admin_refresh_token', refreshToken);
+        return true;
+    } catch (err) {
+        logout();
+        return false;
+    } finally {
+        isRefreshing = false;
+    }
+}
 
 function api(path, opts = {}) {
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = 'Bearer ' + token;
     return fetch(API + path, { ...opts, headers }).then(async r => {
+        if (r.status === 401 && refreshToken && !opts._retry) {
+            const refreshed = await refreshAccessToken();
+            if (refreshed) {
+                opts._retry = true;
+                return api(path, opts);
+            }
+        }
         const data = await r.json();
         if (!r.ok) throw new Error(data.error || r.statusText);
         return data;
@@ -33,7 +66,7 @@ function api(path, opts = {}) {
 }
 
 function render() {
-    if (!token) return renderLogin();
+    if (!token || !refreshToken) return renderLogin();
     renderApp();
 }
 
@@ -72,7 +105,9 @@ function renderLogin() {
             });
             if (data.user.role !== 'ADMIN') throw new Error('Доступ только для администраторов');
             token = data.access_token;
+            refreshToken = data.refresh_token;
             localStorage.setItem('admin_token', token);
+            localStorage.setItem('admin_refresh_token', refreshToken);
             render();
         } catch (err) {
             errEl.textContent = err.message;
@@ -83,7 +118,9 @@ function renderLogin() {
 
 function logout() {
     token = '';
+    refreshToken = '';
     localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_refresh_token');
     render();
 }
 
