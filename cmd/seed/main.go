@@ -28,12 +28,12 @@ func main() {
 
 	// --- Seed Districts ---
 	districts := []domain.District{
-		{Name: "Белгородский район", Region: "Белгородская область", Code: "BEL-01", Timezone: "Europe/Moscow"},
-		{Name: "Старооскольский район", Region: "Белгородская область", Code: "BEL-02", Timezone: "Europe/Moscow"},
-		{Name: "Губкинский район", Region: "Белгородская область", Code: "BEL-03", Timezone: "Europe/Moscow"},
-		{Name: "Шебекинский район", Region: "Белгородская область", Code: "BEL-04", Timezone: "Europe/Moscow"},
-		{Name: "Валуйский район", Region: "Белгородская область", Code: "BEL-05", Timezone: "Europe/Moscow"},
-		{Name: "Алексеевский район", Region: "Белгородская область", Code: "BEL-06", Timezone: "Europe/Moscow"},
+		{Name: "Якутск", Region: "Республика Саха (Якутия)", Code: "YAK-01", Timezone: "Asia/Yakutsk"},
+		{Name: "Хангаласский улус", Region: "Республика Саха (Якутия)", Code: "YAK-02", Timezone: "Asia/Yakutsk"},
+		{Name: "Намский улус", Region: "Республика Саха (Якутия)", Code: "YAK-03", Timezone: "Asia/Yakutsk"},
+		{Name: "Мегино-Кангаласский улус", Region: "Республика Саха (Якутия)", Code: "YAK-04", Timezone: "Asia/Yakutsk"},
+		{Name: "Чурапчинский улус", Region: "Республика Саха (Якутия)", Code: "YAK-05", Timezone: "Asia/Yakutsk"},
+		{Name: "Усть-Алданский улус", Region: "Республика Саха (Якутия)", Code: "YAK-06", Timezone: "Asia/Yakutsk"},
 	}
 
 	for i := range districts {
@@ -50,20 +50,20 @@ func main() {
 
 	users := []domain.User{
 		{
-			Email: "doctor1@example.com", PasswordHash: string(hash), Name: "Иванов Иван",
-			FirstName: "Иван", LastName: "Иванов", MiddleName: "Петрович",
+			Email: "doctor1@example.com", PasswordHash: string(hash), Name: "Николаев Айсен",
+			FirstName: "Айсен", LastName: "Николаев", MiddleName: "Петрович",
 			Phone: "+79001234567", Role: domain.RoleDistrictDoctor,
 			DistrictID: &districts[0].ID, Specialization: "Офтальмолог", IsActive: true,
 		},
 		{
-			Email: "doctor2@example.com", PasswordHash: string(hash), Name: "Петрова Мария",
-			FirstName: "Мария", LastName: "Петрова", MiddleName: "Сергеевна",
+			Email: "doctor2@example.com", PasswordHash: string(hash), Name: "Иванова Сардаана",
+			FirstName: "Сардаана", LastName: "Иванова", MiddleName: "Алексеевна",
 			Phone: "+79001234568", Role: domain.RoleDistrictDoctor,
 			DistrictID: &districts[1].ID, Specialization: "Офтальмолог", IsActive: true,
 		},
 		{
-			Email: "surgeon@example.com", PasswordHash: string(hash), Name: "Сидоров Алексей",
-			FirstName: "Алексей", LastName: "Сидоров", MiddleName: "Владимирович",
+			Email: "surgeon@example.com", PasswordHash: string(hash), Name: "Васильев Ньургун",
+			FirstName: "Ньургун", LastName: "Васильев", MiddleName: "Иванович",
 			Phone: "+79001234569", Role: domain.RoleSurgeon,
 			Specialization: "Хирург-офтальмолог", LicenseNumber: "ЛИЦ-12345", IsActive: true,
 		},
@@ -90,20 +90,20 @@ func main() {
 	// --- Seed Patients ---
 	patients := []domain.Patient{
 		{
-			AccessCode: "a1b2c3d4", FirstName: "Ольга", LastName: "Кузнецова", MiddleName: "Ивановна",
+			AccessCode: "a1b2c3d4", FirstName: "Туяра", LastName: "Алексеева", MiddleName: "Петровна",
 			Phone: "+79009876543", Diagnosis: "Катаракта правого глаза, начальная стадия",
 			OperationType: domain.OperationPhacoemulsification, Eye: "OD",
 			Status: domain.PatientStatusPreparation, DoctorID: users[0].ID, DistrictID: districts[0].ID,
 		},
 		{
-			AccessCode: "e5f6g7h8", FirstName: "Сергей", LastName: "Морозов", MiddleName: "Алексеевич",
+			AccessCode: "e5f6g7h8", FirstName: "Айаал", LastName: "Степанов", MiddleName: "Николаевич",
 			Phone: "+79009876544", Diagnosis: "Открытоугольная глаукома II стадии",
 			OperationType: domain.OperationAntiglaucoma, Eye: "OS",
 			Status: domain.PatientStatusReviewNeeded, DoctorID: users[0].ID, DistrictID: districts[0].ID,
 			SurgeonID: &users[2].ID,
 		},
 		{
-			AccessCode: "i9j0k1l2", FirstName: "Анна", LastName: "Белова", MiddleName: "Михайловна",
+			AccessCode: "i9j0k1l2", FirstName: "Айыына", LastName: "Павлова", MiddleName: "Ивановна",
 			Phone: "+79009876545", Diagnosis: "Регматогенная отслойка сетчатки",
 			OperationType: domain.OperationVitrectomy, Eye: "OD",
 			Status: domain.PatientStatusApproved, DoctorID: users[1].ID, DistrictID: districts[1].ID,

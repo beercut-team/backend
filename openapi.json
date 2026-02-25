@@ -2,799 +2,2746 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Oculus-Feldsher API",
-    "description": "Medical platform for remote ophthalmological patient preparation",
+    "description": "Медицинская платформа для удалённой подготовки офтальмологических пациентов к операции",
     "version": "2.0.0"
   },
   "servers": [
-    { "url": "http://localhost:8080", "description": "Local" }
+    {
+      "url": "http://localhost:8080",
+      "description": "Локальный сервер"
+    }
   ],
   "tags": [
-    { "name": "Auth", "description": "Authentication & authorization" },
-    { "name": "Districts", "description": "District management" },
-    { "name": "Patients", "description": "Patient management" },
-    { "name": "Checklists", "description": "Pre-surgery checklist system" },
-    { "name": "Media", "description": "File upload & storage" },
-    { "name": "IOL", "description": "IOL power calculator" },
-    { "name": "Surgeries", "description": "Surgery scheduling" },
-    { "name": "Comments", "description": "Threaded comments per patient" },
-    { "name": "Notifications", "description": "In-app notifications" },
-    { "name": "Print", "description": "PDF report generation" },
-    { "name": "Sync", "description": "Offline sync" },
-    { "name": "System", "description": "System endpoints" }
+    {
+      "name": "Auth",
+      "description": "Аутентификация и авторизация"
+    },
+    {
+      "name": "Districts",
+      "description": "Управление районами"
+    },
+    {
+      "name": "Patients",
+      "description": "Управление пациентами"
+    },
+    {
+      "name": "Checklists",
+      "description": "Система чек-листов подготовки к операции"
+    },
+    {
+      "name": "Media",
+      "description": "Загрузка и хранение файлов"
+    },
+    {
+      "name": "IOL",
+      "description": "Калькулятор силы ИОЛ"
+    },
+    {
+      "name": "Surgeries",
+      "description": "Планирование операций"
+    },
+    {
+      "name": "Comments",
+      "description": "Комментарии к пациентам"
+    },
+    {
+      "name": "Notifications",
+      "description": "Уведомления в приложении"
+    },
+    {
+      "name": "Print",
+      "description": "Генерация PDF отчётов"
+    },
+    {
+      "name": "Sync",
+      "description": "Оффлайн синхронизация"
+    },
+    {
+      "name": "System",
+      "description": "Системные endpoints"
+    }
   ],
   "paths": {
     "/api/v1/auth/register": {
       "post": {
-        "tags": ["Auth"],
-        "summary": "Register a new user",
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Регистрация нового пользователя",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/RegisterRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
             }
           }
         },
         "responses": {
-          "201": { "description": "User registered", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } },
-          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "409": { "description": "Email already registered", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "201": {
+            "description": "Пользователь зарегистрирован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка валидации",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Email уже зарегистрирован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/api/v1/auth/login": {
       "post": {
-        "tags": ["Auth"],
-        "summary": "Login",
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } } } },
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Вход в систему",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
         "responses": {
-          "200": { "description": "Logged in", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } },
-          "401": { "description": "Invalid credentials", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "200": {
+            "description": "Вход выполнен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неверные учётные данные",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/api/v1/auth/refresh": {
       "post": {
-        "tags": ["Auth"],
-        "summary": "Refresh tokens",
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RefreshRequest" } } } },
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Обновление токенов",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          }
+        },
         "responses": {
-          "200": { "description": "Tokens refreshed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } },
-          "401": { "description": "Invalid refresh token", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "200": {
+            "description": "Токены обновлены",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Недействительный refresh токен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/api/v1/auth/me": {
       "get": {
-        "tags": ["Auth"],
-        "summary": "Get current user",
-        "security": [{ "BearerAuth": [] }],
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Получить текущего пользователя",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "responses": {
-          "200": { "description": "Current user", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/APIResponseUserResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "200": {
+            "description": "Текущий пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseUserResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется авторизация",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/api/v1/auth/logout": {
       "post": {
-        "tags": ["Auth"],
-        "summary": "Logout (revoke refresh token)",
-        "security": [{ "BearerAuth": [] }],
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Выход из системы (отзыв refresh токена)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "responses": {
-          "200": { "description": "Logged out", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "200": {
+            "description": "Выход выполнен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется авторизация",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/api/v1/districts": {
       "get": {
-        "tags": ["Districts"],
-        "summary": "List districts",
-        "security": [{ "BearerAuth": [] }],
+        "tags": [
+          "Districts"
+        ],
+        "summary": "Список районов",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "search", "in": "query", "schema": { "type": "string" } },
-          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
-          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } }
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
         ],
         "responses": {
-          "200": { "description": "Districts list", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/APIResponseDistrictList" } } } }
+          "200": {
+            "description": "Список районов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDistrictList"
+                }
+              }
+            }
+          }
         }
       },
       "post": {
-        "tags": ["Districts"],
-        "summary": "Create district (ADMIN)",
-        "security": [{ "BearerAuth": [] }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateDistrictRequest" } } } },
+        "tags": [
+          "Districts"
+        ],
+        "summary": "Создать район (ADMIN)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDistrictRequest"
+              }
+            }
+          }
+        },
         "responses": {
-          "201": { "description": "District created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/APIResponseDistrict" } } } },
-          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "201": {
+            "description": "Район создан",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDistrict"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещён",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/api/v1/districts/{id}": {
       "get": {
-        "tags": ["Districts"],
-        "summary": "Get district by ID",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "tags": [
+          "Districts"
+        ],
+        "summary": "Получить район по ID",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
-          "200": { "description": "District", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/APIResponseDistrict" } } } },
-          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "200": {
+            "description": "Район",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDistrict"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Не найдено",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
         }
       },
       "patch": {
-        "tags": ["Districts"],
-        "summary": "Update district (ADMIN)",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateDistrictRequest" } } } },
+        "tags": [
+          "Districts"
+        ],
+        "summary": "Обновить район (ADMIN)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDistrictRequest"
+              }
+            }
+          }
+        },
         "responses": {
-          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/APIResponseDistrict" } } } },
-          "403": { "description": "Forbidden" }, "404": { "description": "Not found" }
+          "200": {
+            "description": "Обновлено",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseDistrict"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещён"
+          },
+          "404": {
+            "description": "Не найдено"
+          }
         }
       },
       "delete": {
-        "tags": ["Districts"],
-        "summary": "Delete district (ADMIN)",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "responses": { "200": { "description": "Deleted" }, "403": { "description": "Forbidden" }, "404": { "description": "Not found" } }
+        "tags": [
+          "Districts"
+        ],
+        "summary": "Удалить район (ADMIN)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Удалено"
+          },
+          "403": {
+            "description": "Доступ запрещён"
+          },
+          "404": {
+            "description": "Не найдено"
+          }
+        }
       }
     },
     "/api/v1/patients": {
       "get": {
-        "tags": ["Patients"],
-        "summary": "List patients (RBAC scoped)",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          { "name": "search", "in": "query", "schema": { "type": "string" } },
-          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["NEW","PREPARATION","REVIEW_NEEDED","APPROVED","SURGERY_SCHEDULED","COMPLETED","REJECTED"] } },
-          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
-          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } }
+        "tags": [
+          "Patients"
         ],
-        "responses": { "200": { "description": "Patients list", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/APIResponsePatientList" } } } } }
+        "summary": "Список пациентов (с учётом RBAC)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "NEW",
+                "PREPARATION",
+                "REVIEW_NEEDED",
+                "APPROVED",
+                "SURGERY_SCHEDULED",
+                "COMPLETED",
+                "REJECTED"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список пациентов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponsePatientList"
+                }
+              }
+            }
+          }
+        }
       },
       "post": {
-        "tags": ["Patients"],
-        "summary": "Create patient (DISTRICT_DOCTOR/ADMIN)",
-        "security": [{ "BearerAuth": [] }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreatePatientRequest" } } } },
+        "tags": [
+          "Patients"
+        ],
+        "summary": "Создать пациента (DISTRICT_DOCTOR/ADMIN)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePatientRequest"
+              }
+            }
+          }
+        },
         "responses": {
-          "201": { "description": "Patient created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/APIResponsePatient" } } } },
-          "400": { "description": "Validation error" }
+          "201": {
+            "description": "Пациент создан",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponsePatient"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка валидации"
+          }
         }
       }
     },
     "/api/v1/patients/dashboard": {
       "get": {
-        "tags": ["Patients"],
-        "summary": "Dashboard stats",
-        "security": [{ "BearerAuth": [] }],
-        "responses": { "200": { "description": "Status counts", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/APIResponse" } } } } }
+        "tags": [
+          "Patients"
+        ],
+        "summary": "Статистика дашборда",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Количество по статусам",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/patients/public/{accessCode}": {
       "get": {
-        "tags": ["Patients"],
-        "summary": "Public patient status (no auth)",
-        "parameters": [{ "name": "accessCode", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "tags": [
+          "Patients"
+        ],
+        "summary": "Публичный статус пациента (без авторизации)",
+        "parameters": [
+          {
+            "name": "accessCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
-          "200": { "description": "Public patient status", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/APIResponsePatientPublic" } } } },
-          "404": { "description": "Not found" }
+          "200": {
+            "description": "Публичный статус пациента",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponsePatientPublic"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Не найдено"
+          }
         }
       }
     },
     "/api/v1/patients/{id}": {
       "get": {
-        "tags": ["Patients"],
-        "summary": "Get patient by ID",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "responses": { "200": { "description": "Patient", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/APIResponsePatient" } } } }, "404": { "description": "Not found" } }
+        "tags": [
+          "Patients"
+        ],
+        "summary": "Получить пациента по ID",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Пациент",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponsePatient"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Не найдено"
+          }
+        }
       },
       "patch": {
-        "tags": ["Patients"],
-        "summary": "Update patient",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdatePatientRequest" } } } },
-        "responses": { "200": { "description": "Updated" }, "400": { "description": "Error" } }
+        "tags": [
+          "Patients"
+        ],
+        "summary": "Обновить данные пациента",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePatientRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Обновлено"
+          },
+          "400": {
+            "description": "Ошибка"
+          }
+        }
       }
     },
     "/api/v1/patients/{id}/status": {
       "post": {
-        "tags": ["Patients"],
-        "summary": "Change patient status",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PatientStatusRequest" } } } },
-        "responses": { "200": { "description": "Status changed" }, "400": { "description": "Error" } }
+        "tags": [
+          "Patients"
+        ],
+        "summary": "Изменить статус пациента",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatientStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Статус изменён"
+          },
+          "400": {
+            "description": "Ошибка"
+          }
+        }
       }
     },
     "/api/v1/checklists/patient/{patientId}": {
       "get": {
-        "tags": ["Checklists"],
-        "summary": "Get checklist items for patient",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "patientId", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "responses": { "200": { "description": "Checklist items", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/APIResponseChecklistItems" } } } } }
+        "tags": [
+          "Checklists"
+        ],
+        "summary": "Получить пункты чек-листа пациента",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Пункты чек-листа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseChecklistItems"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/checklists/patient/{patientId}/progress": {
       "get": {
-        "tags": ["Checklists"],
-        "summary": "Get checklist progress",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "patientId", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "responses": { "200": { "description": "Progress", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/APIResponseChecklistProgress" } } } } }
+        "tags": [
+          "Checklists"
+        ],
+        "summary": "Получить прогресс выполнения чек-листа",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Прогресс",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseChecklistProgress"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/checklists/{id}": {
       "patch": {
-        "tags": ["Checklists"],
-        "summary": "Update checklist item",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateChecklistItemRequest" } } } },
-        "responses": { "200": { "description": "Updated" }, "400": { "description": "Error" } }
+        "tags": [
+          "Checklists"
+        ],
+        "summary": "Обновить пункт чек-листа",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChecklistItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Обновлено"
+          },
+          "400": {
+            "description": "Ошибка"
+          }
+        }
       }
     },
     "/api/v1/checklists/{id}/review": {
       "post": {
-        "tags": ["Checklists"],
-        "summary": "Surgeon review item (SURGEON/ADMIN)",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReviewChecklistItemRequest" } } } },
-        "responses": { "200": { "description": "Reviewed" }, "400": { "description": "Error" } }
+        "tags": [
+          "Checklists"
+        ],
+        "summary": "Проверка пункта хирургом (SURGEON/ADMIN)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewChecklistItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Проверено"
+          },
+          "400": {
+            "description": "Ошибка"
+          }
+        }
       }
     },
     "/api/v1/media/upload": {
       "post": {
-        "tags": ["Media"],
-        "summary": "Upload file (multipart, max 20MB)",
-        "security": [{ "BearerAuth": [] }],
+        "tags": [
+          "Media"
+        ],
+        "summary": "Загрузить файл (multipart, макс 20МБ)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "multipart/form-data": {
               "schema": {
                 "type": "object",
-                "required": ["file", "patient_id"],
+                "required": [
+                  "file",
+                  "patient_id"
+                ],
                 "properties": {
-                  "file": { "type": "string", "format": "binary" },
-                  "patient_id": { "type": "integer" },
-                  "category": { "type": "string", "default": "general" }
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "patient_id": {
+                    "type": "integer"
+                  },
+                  "category": {
+                    "type": "string",
+                    "default": "general"
+                  }
                 }
               }
             }
           }
         },
-        "responses": { "201": { "description": "Uploaded", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/APIResponseMedia" } } } }, "400": { "description": "Error" } }
+        "responses": {
+          "201": {
+            "description": "Загружено",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseMedia"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка"
+          }
+        }
       }
     },
     "/api/v1/media/patient/{patientId}": {
       "get": {
-        "tags": ["Media"],
-        "summary": "List media for patient",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "patientId", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "responses": { "200": { "description": "Media list" } }
+        "tags": [
+          "Media"
+        ],
+        "summary": "Список медиафайлов пациента",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список медиафайлов"
+          }
+        }
       }
     },
     "/api/v1/media/{id}/download": {
       "get": {
-        "tags": ["Media"],
-        "summary": "Get download URL",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "responses": { "200": { "description": "Download URL", "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" }, "data": { "type": "object", "properties": { "url": { "type": "string" } } } } } } } }, "404": { "description": "Not found" } }
+        "tags": [
+          "Media"
+        ],
+        "summary": "Получить URL для скачивания",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "URL для скачивания",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "url": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Не найдено"
+          }
+        }
       }
     },
     "/api/v1/media/{id}/thumbnail": {
       "get": {
-        "tags": ["Media"],
-        "summary": "Get thumbnail URL",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "responses": { "200": { "description": "Thumbnail URL" }, "404": { "description": "Not found" } }
+        "tags": [
+          "Media"
+        ],
+        "summary": "Получить URL миниатюры",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "URL миниатюры"
+          },
+          "404": {
+            "description": "Не найдено"
+          }
+        }
       }
     },
     "/api/v1/media/{id}": {
       "delete": {
-        "tags": ["Media"],
-        "summary": "Delete media",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "responses": { "200": { "description": "Deleted" }, "404": { "description": "Not found" } }
+        "tags": [
+          "Media"
+        ],
+        "summary": "Удалить медиафайл",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Удалено"
+          },
+          "404": {
+            "description": "Не найдено"
+          }
+        }
       }
     },
     "/api/v1/iol/calculate": {
       "post": {
-        "tags": ["IOL"],
-        "summary": "Calculate IOL power",
-        "security": [{ "BearerAuth": [] }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/IOLCalculationRequest" } } } },
-        "responses": { "200": { "description": "Calculation result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/APIResponseIOLCalculation" } } } }, "400": { "description": "Error" } }
+        "tags": [
+          "IOL"
+        ],
+        "summary": "Рассчитать силу ИОЛ",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IOLCalculationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Результат расчёта",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseIOLCalculation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка"
+          }
+        }
       }
     },
     "/api/v1/iol/patient/{patientId}/history": {
       "get": {
-        "tags": ["IOL"],
-        "summary": "IOL calculation history",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "patientId", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "responses": { "200": { "description": "Calculations list" } }
+        "tags": [
+          "IOL"
+        ],
+        "summary": "История расчётов ИОЛ",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список расчётов"
+          }
+        }
       }
     },
     "/api/v1/surgeries": {
       "get": {
-        "tags": ["Surgeries"],
-        "summary": "List surgeries for current surgeon",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
-          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } }
+        "tags": [
+          "Surgeries"
         ],
-        "responses": { "200": { "description": "Surgeries list" } }
+        "summary": "Список операций текущего хирурга",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список операций"
+          }
+        }
       },
       "post": {
-        "tags": ["Surgeries"],
-        "summary": "Schedule surgery (SURGEON/ADMIN)",
-        "security": [{ "BearerAuth": [] }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateSurgeryRequest" } } } },
-        "responses": { "201": { "description": "Surgery scheduled" }, "400": { "description": "Error" } }
+        "tags": [
+          "Surgeries"
+        ],
+        "summary": "Запланировать операцию (SURGEON/ADMIN)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSurgeryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Операция запланирована"
+          },
+          "400": {
+            "description": "Ошибка"
+          }
+        }
       }
     },
     "/api/v1/surgeries/{id}": {
       "get": {
-        "tags": ["Surgeries"],
-        "summary": "Get surgery by ID",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "responses": { "200": { "description": "Surgery" }, "404": { "description": "Not found" } }
+        "tags": [
+          "Surgeries"
+        ],
+        "summary": "Получить операцию по ID",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Операция"
+          },
+          "404": {
+            "description": "Не найдено"
+          }
+        }
       },
       "patch": {
-        "tags": ["Surgeries"],
-        "summary": "Update surgery (SURGEON/ADMIN)",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateSurgeryRequest" } } } },
-        "responses": { "200": { "description": "Updated" }, "400": { "description": "Error" } }
+        "tags": [
+          "Surgeries"
+        ],
+        "summary": "Обновить операцию (SURGEON/ADMIN)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSurgeryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Обновлено"
+          },
+          "400": {
+            "description": "Ошибка"
+          }
+        }
       }
     },
     "/api/v1/comments": {
       "post": {
-        "tags": ["Comments"],
-        "summary": "Create comment",
-        "security": [{ "BearerAuth": [] }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateCommentRequest" } } } },
-        "responses": { "201": { "description": "Comment created" }, "400": { "description": "Error" } }
+        "tags": [
+          "Comments"
+        ],
+        "summary": "Создать комментарий",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCommentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Комментарий создан"
+          },
+          "400": {
+            "description": "Ошибка"
+          }
+        }
       }
     },
     "/api/v1/comments/patient/{patientId}": {
       "get": {
-        "tags": ["Comments"],
-        "summary": "List comments for patient",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "patientId", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "responses": { "200": { "description": "Comments list" } }
+        "tags": [
+          "Comments"
+        ],
+        "summary": "Список комментариев пациента",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список комментариев"
+          }
+        }
       }
     },
     "/api/v1/comments/patient/{patientId}/read": {
       "post": {
-        "tags": ["Comments"],
-        "summary": "Mark comments as read",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "patientId", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "responses": { "200": { "description": "Marked as read" } }
+        "tags": [
+          "Comments"
+        ],
+        "summary": "Отметить комментарии как прочитанные",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Отмечено как прочитанное"
+          }
+        }
       }
     },
     "/api/v1/notifications": {
       "get": {
-        "tags": ["Notifications"],
-        "summary": "List notifications",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
-          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } }
+        "tags": [
+          "Notifications"
         ],
-        "responses": { "200": { "description": "Notifications list" } }
+        "summary": "Список уведомлений",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список уведомлений"
+          }
+        }
       }
     },
     "/api/v1/notifications/unread-count": {
       "get": {
-        "tags": ["Notifications"],
-        "summary": "Get unread count",
-        "security": [{ "BearerAuth": [] }],
-        "responses": { "200": { "description": "Unread count", "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" }, "data": { "type": "object", "properties": { "count": { "type": "integer" } } } } } } } } }
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Получить количество непрочитанных",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Количество непрочитанных",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "count": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/notifications/{id}/read": {
       "post": {
-        "tags": ["Notifications"],
-        "summary": "Mark notification as read",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "responses": { "200": { "description": "Marked as read" } }
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Отметить уведомление как прочитанное",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Отмечено как прочитанное"
+          }
+        }
       }
     },
     "/api/v1/notifications/read-all": {
       "post": {
-        "tags": ["Notifications"],
-        "summary": "Mark all notifications as read",
-        "security": [{ "BearerAuth": [] }],
-        "responses": { "200": { "description": "All marked as read" } }
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Отметить все уведомления как прочитанные",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Все отмечены как прочитанные"
+          }
+        }
       }
     },
     "/api/v1/print/patient/{patientId}/routing-sheet": {
       "get": {
-        "tags": ["Print"],
-        "summary": "Download routing sheet PDF",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "patientId", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "responses": { "200": { "description": "PDF file", "content": { "application/pdf": { "schema": { "type": "string", "format": "binary" } } } } }
+        "tags": [
+          "Print"
+        ],
+        "summary": "Скачать маршрутный лист PDF",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PDF файл",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/print/patient/{patientId}/checklist-report": {
       "get": {
-        "tags": ["Print"],
-        "summary": "Download checklist report PDF",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "patientId", "in": "path", "required": true, "schema": { "type": "integer" } }],
-        "responses": { "200": { "description": "PDF file", "content": { "application/pdf": { "schema": { "type": "string", "format": "binary" } } } } }
+        "tags": [
+          "Print"
+        ],
+        "summary": "Скачать отчёт по чек-листу PDF",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PDF файл",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/sync/push": {
       "post": {
-        "tags": ["Sync"],
-        "summary": "Push offline mutations",
-        "security": [{ "BearerAuth": [] }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SyncPushRequest" } } } },
-        "responses": { "200": { "description": "Pushed" }, "400": { "description": "Error" } }
+        "tags": [
+          "Sync"
+        ],
+        "summary": "Отправить оффлайн изменения",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncPushRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Отправлено"
+          },
+          "400": {
+            "description": "Ошибка"
+          }
+        }
       }
     },
     "/api/v1/sync/pull": {
       "get": {
-        "tags": ["Sync"],
-        "summary": "Pull changes since timestamp",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [{ "name": "since", "in": "query", "required": true, "schema": { "type": "string", "format": "date-time" }, "description": "ISO 8601 timestamp" }],
-        "responses": { "200": { "description": "Changes", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/APIResponseSyncPull" } } } }, "400": { "description": "Error" } }
+        "tags": [
+          "Sync"
+        ],
+        "summary": "Получить изменения с указанной метки времени",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Метка времени ISO 8601"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Изменения",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseSyncPull"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка"
+          }
+        }
       }
     },
     "/api/v1/ping": {
       "get": {
-        "tags": ["System"],
-        "summary": "Ping (auth check)",
-        "security": [{ "BearerAuth": [] }],
+        "tags": [
+          "System"
+        ],
+        "summary": "Проверка связи (проверка авторизации)",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "responses": {
-          "200": { "description": "Pong", "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string", "example": "pong" }, "user_id": { "type": "integer", "example": 1 } } } } } }
+          "200": {
+            "description": "Понг",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "pong"
+                    },
+                    "user_id": {
+                      "type": "integer",
+                      "example": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }
   },
   "components": {
     "securitySchemes": {
-      "BearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
     },
     "schemas": {
       "APIResponse": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean" },
+          "success": {
+            "type": "boolean"
+          },
           "data": {},
-          "error": { "type": "string", "nullable": true },
-          "meta": { "$ref": "#/components/schemas/Meta" }
+          "error": {
+            "type": "string",
+            "nullable": true
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
         }
       },
       "Meta": {
         "type": "object",
         "nullable": true,
         "properties": {
-          "page": { "type": "integer" },
-          "limit": { "type": "integer" },
-          "total": { "type": "integer" },
-          "total_pages": { "type": "integer" }
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "total_pages": {
+            "type": "integer"
+          }
         }
       },
       "RegisterRequest": {
         "type": "object",
-        "required": ["email", "password", "name"],
+        "required": [
+          "email",
+          "password",
+          "name"
+        ],
         "properties": {
-          "email": { "type": "string", "format": "email", "example": "user@example.com" },
-          "password": { "type": "string", "minLength": 6, "example": "secret123" },
-          "name": { "type": "string", "minLength": 2, "example": "Иванов Иван" },
-          "first_name": { "type": "string", "example": "Иван" },
-          "last_name": { "type": "string", "example": "Иванов" },
-          "middle_name": { "type": "string", "example": "Петрович" },
-          "phone": { "type": "string", "example": "+79001234567" },
-          "role": { "type": "string", "enum": ["DISTRICT_DOCTOR", "SURGEON", "PATIENT", "ADMIN"], "default": "PATIENT" }
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "user@example.com"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 6,
+            "example": "secret123"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "example": "Иванов Иван"
+          },
+          "first_name": {
+            "type": "string",
+            "example": "Иван"
+          },
+          "last_name": {
+            "type": "string",
+            "example": "Иванов"
+          },
+          "middle_name": {
+            "type": "string",
+            "example": "Петрович"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+79001234567"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "DISTRICT_DOCTOR",
+              "SURGEON",
+              "PATIENT",
+              "ADMIN"
+            ],
+            "default": "PATIENT"
+          }
         }
       },
       "LoginRequest": {
         "type": "object",
-        "required": ["email", "password"],
+        "required": [
+          "email",
+          "password"
+        ],
         "properties": {
-          "email": { "type": "string", "format": "email" },
-          "password": { "type": "string" }
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string"
+          }
         }
       },
       "RefreshRequest": {
         "type": "object",
-        "required": ["refresh_token"],
-        "properties": { "refresh_token": { "type": "string" } }
+        "required": [
+          "refresh_token"
+        ],
+        "properties": {
+          "refresh_token": {
+            "type": "string"
+          }
+        }
       },
       "AuthResponse": {
         "type": "object",
         "properties": {
-          "access_token": { "type": "string" },
-          "refresh_token": { "type": "string" },
-          "user": { "$ref": "#/components/schemas/UserResponse" }
+          "access_token": {
+            "type": "string"
+          },
+          "refresh_token": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserResponse"
+          }
         }
       },
       "UserResponse": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" },
-          "email": { "type": "string" },
-          "name": { "type": "string" },
-          "first_name": { "type": "string" },
-          "last_name": { "type": "string" },
-          "middle_name": { "type": "string" },
-          "phone": { "type": "string" },
-          "role": { "type": "string", "enum": ["DISTRICT_DOCTOR", "SURGEON", "PATIENT", "ADMIN"] },
-          "district_id": { "type": "integer", "nullable": true },
-          "specialization": { "type": "string" },
-          "license_number": { "type": "string" },
-          "is_active": { "type": "boolean" }
+          "id": {
+            "type": "integer"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "middle_name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "DISTRICT_DOCTOR",
+              "SURGEON",
+              "PATIENT",
+              "ADMIN"
+            ]
+          },
+          "district_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "specialization": {
+            "type": "string"
+          },
+          "license_number": {
+            "type": "string"
+          },
+          "is_active": {
+            "type": "boolean"
+          }
         }
       },
-      "ErrorResponse": { "type": "object", "properties": { "success": { "type": "boolean", "example": false }, "error": { "type": "string" } } },
-      "MessageResponse": { "type": "object", "properties": { "message": { "type": "string" } } },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "MessageResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
       "District": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" },
-          "name": { "type": "string" },
-          "region": { "type": "string" },
-          "code": { "type": "string" },
-          "timezone": { "type": "string" },
-          "created_at": { "type": "string", "format": "date-time" },
-          "updated_at": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "CreateDistrictRequest": {
         "type": "object",
-        "required": ["name", "region", "code"],
+        "required": [
+          "name",
+          "region",
+          "code"
+        ],
         "properties": {
-          "name": { "type": "string" },
-          "region": { "type": "string" },
-          "code": { "type": "string" },
-          "timezone": { "type": "string", "default": "Europe/Moscow" }
+          "name": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string",
+            "default": "Europe/Moscow"
+          }
         }
       },
       "UpdateDistrictRequest": {
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "region": { "type": "string" },
-          "code": { "type": "string" },
-          "timezone": { "type": "string" }
+          "name": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          }
         }
       },
       "Patient": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" },
-          "access_code": { "type": "string" },
-          "first_name": { "type": "string" },
-          "last_name": { "type": "string" },
-          "middle_name": { "type": "string" },
-          "date_of_birth": { "type": "string", "format": "date-time" },
-          "phone": { "type": "string" },
-          "email": { "type": "string" },
-          "address": { "type": "string" },
-          "snils": { "type": "string" },
-          "passport_series": { "type": "string" },
-          "passport_number": { "type": "string" },
-          "policy_number": { "type": "string" },
-          "diagnosis": { "type": "string" },
-          "operation_type": { "type": "string", "enum": ["PHACOEMULSIFICATION", "ANTIGLAUCOMA", "VITRECTOMY"] },
-          "eye": { "type": "string", "enum": ["OD", "OS", "OU"] },
-          "status": { "type": "string", "enum": ["NEW", "PREPARATION", "REVIEW_NEEDED", "APPROVED", "SURGERY_SCHEDULED", "COMPLETED", "REJECTED"] },
-          "doctor_id": { "type": "integer" },
-          "surgeon_id": { "type": "integer", "nullable": true },
-          "district_id": { "type": "integer" },
-          "notes": { "type": "string" },
-          "surgery_date": { "type": "string", "format": "date-time", "nullable": true },
-          "created_at": { "type": "string", "format": "date-time" },
-          "updated_at": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "integer"
+          },
+          "access_code": {
+            "type": "string"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "middle_name": {
+            "type": "string"
+          },
+          "date_of_birth": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "snils": {
+            "type": "string"
+          },
+          "passport_series": {
+            "type": "string"
+          },
+          "passport_number": {
+            "type": "string"
+          },
+          "policy_number": {
+            "type": "string"
+          },
+          "diagnosis": {
+            "type": "string"
+          },
+          "operation_type": {
+            "type": "string",
+            "enum": [
+              "PHACOEMULSIFICATION",
+              "ANTIGLAUCOMA",
+              "VITRECTOMY"
+            ]
+          },
+          "eye": {
+            "type": "string",
+            "enum": [
+              "OD",
+              "OS",
+              "OU"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "PREPARATION",
+              "REVIEW_NEEDED",
+              "APPROVED",
+              "SURGERY_SCHEDULED",
+              "COMPLETED",
+              "REJECTED"
+            ]
+          },
+          "doctor_id": {
+            "type": "integer"
+          },
+          "surgeon_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "district_id": {
+            "type": "integer"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "surgery_date": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "CreatePatientRequest": {
         "type": "object",
-        "required": ["first_name", "last_name", "operation_type", "eye", "district_id"],
+        "required": [
+          "first_name",
+          "last_name",
+          "operation_type",
+          "eye",
+          "district_id"
+        ],
         "properties": {
-          "first_name": { "type": "string" }, "last_name": { "type": "string" }, "middle_name": { "type": "string" },
-          "date_of_birth": { "type": "string", "example": "1960-05-15" },
-          "phone": { "type": "string" }, "email": { "type": "string" }, "address": { "type": "string" },
-          "snils": { "type": "string" }, "passport_series": { "type": "string" }, "passport_number": { "type": "string" }, "policy_number": { "type": "string" },
-          "diagnosis": { "type": "string" },
-          "operation_type": { "type": "string", "enum": ["PHACOEMULSIFICATION", "ANTIGLAUCOMA", "VITRECTOMY"] },
-          "eye": { "type": "string", "enum": ["OD", "OS", "OU"] },
-          "district_id": { "type": "integer" }, "notes": { "type": "string" }
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "middle_name": {
+            "type": "string"
+          },
+          "date_of_birth": {
+            "type": "string",
+            "example": "1960-05-15"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "snils": {
+            "type": "string"
+          },
+          "passport_series": {
+            "type": "string"
+          },
+          "passport_number": {
+            "type": "string"
+          },
+          "policy_number": {
+            "type": "string"
+          },
+          "diagnosis": {
+            "type": "string"
+          },
+          "operation_type": {
+            "type": "string",
+            "enum": [
+              "PHACOEMULSIFICATION",
+              "ANTIGLAUCOMA",
+              "VITRECTOMY"
+            ]
+          },
+          "eye": {
+            "type": "string",
+            "enum": [
+              "OD",
+              "OS",
+              "OU"
+            ]
+          },
+          "district_id": {
+            "type": "integer"
+          },
+          "notes": {
+            "type": "string"
+          }
         }
       },
       "UpdatePatientRequest": {
         "type": "object",
         "properties": {
-          "first_name": { "type": "string" }, "last_name": { "type": "string" }, "middle_name": { "type": "string" },
-          "phone": { "type": "string" }, "email": { "type": "string" }, "address": { "type": "string" },
-          "diagnosis": { "type": "string" }, "notes": { "type": "string" },
-          "snils": { "type": "string" }, "passport_series": { "type": "string" }, "passport_number": { "type": "string" }, "policy_number": { "type": "string" }
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "middle_name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "diagnosis": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "snils": {
+            "type": "string"
+          },
+          "passport_series": {
+            "type": "string"
+          },
+          "passport_number": {
+            "type": "string"
+          },
+          "policy_number": {
+            "type": "string"
+          }
         }
       },
       "PatientStatusRequest": {
         "type": "object",
-        "required": ["status"],
+        "required": [
+          "status"
+        ],
         "properties": {
-          "status": { "type": "string", "enum": ["NEW", "PREPARATION", "REVIEW_NEEDED", "APPROVED", "SURGERY_SCHEDULED", "COMPLETED", "REJECTED"] },
-          "comment": { "type": "string" }
+          "status": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "PREPARATION",
+              "REVIEW_NEEDED",
+              "APPROVED",
+              "SURGERY_SCHEDULED",
+              "COMPLETED",
+              "REJECTED"
+            ]
+          },
+          "comment": {
+            "type": "string"
+          }
         }
       },
       "PatientPublicResponse": {
         "type": "object",
         "properties": {
-          "access_code": { "type": "string" }, "first_name": { "type": "string" }, "last_name": { "type": "string" },
-          "status": { "type": "string" }, "surgery_date": { "type": "string", "format": "date-time", "nullable": true },
-          "status_history": { "type": "array", "items": { "$ref": "#/components/schemas/PatientStatusHistory" } }
+          "access_code": {
+            "type": "string"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "surgery_date": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "status_history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PatientStatusHistory"
+            }
+          }
         }
       },
       "PatientStatusHistory": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" }, "patient_id": { "type": "integer" },
-          "from_status": { "type": "string" }, "to_status": { "type": "string" },
-          "changed_by": { "type": "integer" }, "comment": { "type": "string" },
-          "created_at": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "integer"
+          },
+          "patient_id": {
+            "type": "integer"
+          },
+          "from_status": {
+            "type": "string"
+          },
+          "to_status": {
+            "type": "string"
+          },
+          "changed_by": {
+            "type": "integer"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "ChecklistItem": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" }, "patient_id": { "type": "integer" }, "template_id": { "type": "integer" },
-          "name": { "type": "string" }, "description": { "type": "string" }, "category": { "type": "string" },
-          "is_required": { "type": "boolean" },
-          "status": { "type": "string", "enum": ["PENDING", "IN_PROGRESS", "COMPLETED", "REJECTED", "EXPIRED"] },
-          "result": { "type": "string" }, "notes": { "type": "string" },
-          "completed_at": { "type": "string", "format": "date-time", "nullable": true },
-          "completed_by": { "type": "integer", "nullable": true },
-          "reviewed_by": { "type": "integer", "nullable": true },
-          "review_note": { "type": "string" },
-          "expires_at": { "type": "string", "format": "date-time", "nullable": true },
-          "created_at": { "type": "string", "format": "date-time" },
-          "updated_at": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "integer"
+          },
+          "patient_id": {
+            "type": "integer"
+          },
+          "template_id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "is_required": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "IN_PROGRESS",
+              "COMPLETED",
+              "REJECTED",
+              "EXPIRED"
+            ]
+          },
+          "result": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "completed_by": {
+            "type": "integer",
+            "nullable": true
+          },
+          "reviewed_by": {
+            "type": "integer",
+            "nullable": true
+          },
+          "review_note": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "UpdateChecklistItemRequest": {
         "type": "object",
-        "properties": { "status": { "type": "string" }, "result": { "type": "string" }, "notes": { "type": "string" } }
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
       },
       "ReviewChecklistItemRequest": {
         "type": "object",
-        "required": ["status"],
-        "properties": { "status": { "type": "string", "enum": ["COMPLETED", "REJECTED"] }, "review_note": { "type": "string" } }
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "COMPLETED",
+              "REJECTED"
+            ]
+          },
+          "review_note": {
+            "type": "string"
+          }
+        }
       },
       "ChecklistProgress": {
         "type": "object",
         "properties": {
-          "total": { "type": "integer" }, "completed": { "type": "integer" },
-          "required": { "type": "integer" }, "required_completed": { "type": "integer" },
-          "percentage": { "type": "number", "format": "float" }
+          "total": {
+            "type": "integer"
+          },
+          "completed": {
+            "type": "integer"
+          },
+          "required": {
+            "type": "integer"
+          },
+          "required_completed": {
+            "type": "integer"
+          },
+          "percentage": {
+            "type": "number",
+            "format": "float"
+          }
         }
       },
       "Media": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" }, "patient_id": { "type": "integer" }, "uploaded_by": { "type": "integer" },
-          "file_name": { "type": "string" }, "original_name": { "type": "string" },
-          "content_type": { "type": "string" }, "size": { "type": "integer" },
-          "storage_path": { "type": "string" }, "thumbnail_path": { "type": "string" },
-          "category": { "type": "string" }, "created_at": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "integer"
+          },
+          "patient_id": {
+            "type": "integer"
+          },
+          "uploaded_by": {
+            "type": "integer"
+          },
+          "file_name": {
+            "type": "string"
+          },
+          "original_name": {
+            "type": "string"
+          },
+          "content_type": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "storage_path": {
+            "type": "string"
+          },
+          "thumbnail_path": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "IOLCalculationRequest": {
         "type": "object",
-        "required": ["patient_id", "eye", "axial_length", "keratometry1", "keratometry2", "formula"],
+        "required": [
+          "patient_id",
+          "eye",
+          "axial_length",
+          "keratometry1",
+          "keratometry2",
+          "formula"
+        ],
         "properties": {
-          "patient_id": { "type": "integer" },
-          "eye": { "type": "string", "enum": ["OD", "OS"] },
-          "axial_length": { "type": "number", "format": "float", "example": 23.5 },
-          "keratometry1": { "type": "number", "format": "float", "example": 43.5 },
-          "keratometry2": { "type": "number", "format": "float", "example": 44.0 },
-          "acd": { "type": "number", "format": "float", "example": 3.2, "description": "Anterior chamber depth (required for Haigis)" },
-          "target_refraction": { "type": "number", "format": "float", "default": 0 },
-          "formula": { "type": "string", "enum": ["SRKT", "HAIGIS", "HOFFERQ"] },
-          "a_constant": { "type": "number", "format": "float", "default": 118.4 }
+          "patient_id": {
+            "type": "integer"
+          },
+          "eye": {
+            "type": "string",
+            "enum": [
+              "OD",
+              "OS"
+            ]
+          },
+          "axial_length": {
+            "type": "number",
+            "format": "float",
+            "example": 23.5
+          },
+          "keratometry1": {
+            "type": "number",
+            "format": "float",
+            "example": 43.5
+          },
+          "keratometry2": {
+            "type": "number",
+            "format": "float",
+            "example": 44.0
+          },
+          "acd": {
+            "type": "number",
+            "format": "float",
+            "example": 3.2,
+            "description": "Глубина передней камеры (требуется для Haigis)"
+          },
+          "target_refraction": {
+            "type": "number",
+            "format": "float",
+            "default": 0
+          },
+          "formula": {
+            "type": "string",
+            "enum": [
+              "SRKT",
+              "HAIGIS",
+              "HOFFERQ"
+            ]
+          },
+          "a_constant": {
+            "type": "number",
+            "format": "float",
+            "default": 118.4
+          }
         }
       },
       "IOLCalculation": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" }, "patient_id": { "type": "integer" }, "eye": { "type": "string" },
-          "axial_length": { "type": "number" }, "keratometry1": { "type": "number" }, "keratometry2": { "type": "number" },
-          "acd": { "type": "number" }, "target_refraction": { "type": "number" },
-          "formula": { "type": "string" }, "iol_power": { "type": "number" },
-          "predicted_refraction": { "type": "number" }, "a_constant": { "type": "number" },
-          "calculated_by": { "type": "integer" }, "warnings": { "type": "string" },
-          "created_at": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "integer"
+          },
+          "patient_id": {
+            "type": "integer"
+          },
+          "eye": {
+            "type": "string"
+          },
+          "axial_length": {
+            "type": "number"
+          },
+          "keratometry1": {
+            "type": "number"
+          },
+          "keratometry2": {
+            "type": "number"
+          },
+          "acd": {
+            "type": "number"
+          },
+          "target_refraction": {
+            "type": "number"
+          },
+          "formula": {
+            "type": "string"
+          },
+          "iol_power": {
+            "type": "number"
+          },
+          "predicted_refraction": {
+            "type": "number"
+          },
+          "a_constant": {
+            "type": "number"
+          },
+          "calculated_by": {
+            "type": "integer"
+          },
+          "warnings": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "Surgery": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" }, "patient_id": { "type": "integer" }, "surgeon_id": { "type": "integer" },
-          "scheduled_date": { "type": "string", "format": "date-time" },
-          "operation_type": { "type": "string" }, "eye": { "type": "string" },
-          "status": { "type": "string", "enum": ["SCHEDULED", "COMPLETED", "CANCELLED"] },
-          "notes": { "type": "string" },
-          "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "integer"
+          },
+          "patient_id": {
+            "type": "integer"
+          },
+          "surgeon_id": {
+            "type": "integer"
+          },
+          "scheduled_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "operation_type": {
+            "type": "string"
+          },
+          "eye": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SCHEDULED",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "notes": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "CreateSurgeryRequest": {
         "type": "object",
-        "required": ["patient_id", "scheduled_date"],
+        "required": [
+          "patient_id",
+          "scheduled_date"
+        ],
         "properties": {
-          "patient_id": { "type": "integer" },
-          "scheduled_date": { "type": "string", "example": "2026-04-15" },
-          "notes": { "type": "string" }
+          "patient_id": {
+            "type": "integer"
+          },
+          "scheduled_date": {
+            "type": "string",
+            "example": "2026-04-15"
+          },
+          "notes": {
+            "type": "string"
+          }
         }
       },
       "UpdateSurgeryRequest": {
         "type": "object",
-        "properties": { "scheduled_date": { "type": "string" }, "status": { "type": "string" }, "notes": { "type": "string" } }
+        "properties": {
+          "scheduled_date": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
       },
       "Comment": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" }, "patient_id": { "type": "integer" }, "author_id": { "type": "integer" },
-          "parent_id": { "type": "integer", "nullable": true },
-          "body": { "type": "string" }, "is_urgent": { "type": "boolean" }, "is_read": { "type": "boolean" },
-          "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "integer"
+          },
+          "patient_id": {
+            "type": "integer"
+          },
+          "author_id": {
+            "type": "integer"
+          },
+          "parent_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "body": {
+            "type": "string"
+          },
+          "is_urgent": {
+            "type": "boolean"
+          },
+          "is_read": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "CreateCommentRequest": {
         "type": "object",
-        "required": ["patient_id", "body"],
+        "required": [
+          "patient_id",
+          "body"
+        ],
         "properties": {
-          "patient_id": { "type": "integer" }, "parent_id": { "type": "integer", "nullable": true },
-          "body": { "type": "string" }, "is_urgent": { "type": "boolean", "default": false }
+          "patient_id": {
+            "type": "integer"
+          },
+          "parent_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "body": {
+            "type": "string"
+          },
+          "is_urgent": {
+            "type": "boolean",
+            "default": false
+          }
         }
       },
       "Notification": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" }, "user_id": { "type": "integer" },
-          "type": { "type": "string", "enum": ["STATUS_CHANGE", "NEW_COMMENT", "SURGERY_SCHEDULED", "CHECKLIST_EXPIRY", "SURGERY_REMINDER"] },
-          "title": { "type": "string" }, "body": { "type": "string" },
-          "entity_type": { "type": "string" }, "entity_id": { "type": "integer" },
-          "is_read": { "type": "boolean" }, "created_at": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "integer"
+          },
+          "user_id": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "STATUS_CHANGE",
+              "NEW_COMMENT",
+              "SURGERY_SCHEDULED",
+              "CHECKLIST_EXPIRY",
+              "SURGERY_REMINDER"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "entity_type": {
+            "type": "string"
+          },
+          "entity_id": {
+            "type": "integer"
+          },
+          "is_read": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "SyncPushRequest": {
         "type": "object",
-        "required": ["mutations"],
+        "required": [
+          "mutations"
+        ],
         "properties": {
           "mutations": {
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["entity", "action", "client_time"],
+              "required": [
+                "entity",
+                "action",
+                "client_time"
+              ],
               "properties": {
-                "entity": { "type": "string" }, "entity_id": { "type": "integer" },
-                "action": { "type": "string", "enum": ["CREATE", "UPDATE", "DELETE"] },
-                "payload": {}, "client_time": { "type": "string", "format": "date-time" }
+                "entity": {
+                  "type": "string"
+                },
+                "entity_id": {
+                  "type": "integer"
+                },
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "CREATE",
+                    "UPDATE",
+                    "DELETE"
+                  ]
+                },
+                "payload": {},
+                "client_time": {
+                  "type": "string",
+                  "format": "date-time"
+                }
               }
             }
           }
@@ -803,21 +2750,191 @@
       "SyncPullResponse": {
         "type": "object",
         "properties": {
-          "changes": { "type": "array", "items": { "type": "object" } },
-          "since": { "type": "string" }
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "since": {
+            "type": "string"
+          }
         }
       },
-      "APIResponseUserResponse": { "allOf": [{ "$ref": "#/components/schemas/APIResponse" }, { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/UserResponse" } } }] },
-      "APIResponseDistrict": { "allOf": [{ "$ref": "#/components/schemas/APIResponse" }, { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/District" } } }] },
-      "APIResponseDistrictList": { "allOf": [{ "$ref": "#/components/schemas/APIResponse" }, { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/District" } } } }] },
-      "APIResponsePatient": { "allOf": [{ "$ref": "#/components/schemas/APIResponse" }, { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Patient" } } }] },
-      "APIResponsePatientList": { "allOf": [{ "$ref": "#/components/schemas/APIResponse" }, { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Patient" } } } }] },
-      "APIResponsePatientPublic": { "allOf": [{ "$ref": "#/components/schemas/APIResponse" }, { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/PatientPublicResponse" } } }] },
-      "APIResponseChecklistItems": { "allOf": [{ "$ref": "#/components/schemas/APIResponse" }, { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/ChecklistItem" } } } }] },
-      "APIResponseChecklistProgress": { "allOf": [{ "$ref": "#/components/schemas/APIResponse" }, { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/ChecklistProgress" } } }] },
-      "APIResponseMedia": { "allOf": [{ "$ref": "#/components/schemas/APIResponse" }, { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Media" } } }] },
-      "APIResponseIOLCalculation": { "allOf": [{ "$ref": "#/components/schemas/APIResponse" }, { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/IOLCalculation" } } }] },
-      "APIResponseSyncPull": { "allOf": [{ "$ref": "#/components/schemas/APIResponse" }, { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/SyncPullResponse" } } }] }
+      "APIResponseUserResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/APIResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/UserResponse"
+              }
+            }
+          }
+        ]
+      },
+      "APIResponseDistrict": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/APIResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/District"
+              }
+            }
+          }
+        ]
+      },
+      "APIResponseDistrictList": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/APIResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/District"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "APIResponsePatient": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/APIResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/Patient"
+              }
+            }
+          }
+        ]
+      },
+      "APIResponsePatientList": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/APIResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Patient"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "APIResponsePatientPublic": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/APIResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/PatientPublicResponse"
+              }
+            }
+          }
+        ]
+      },
+      "APIResponseChecklistItems": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/APIResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ChecklistItem"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "APIResponseChecklistProgress": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/APIResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/ChecklistProgress"
+              }
+            }
+          }
+        ]
+      },
+      "APIResponseMedia": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/APIResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/Media"
+              }
+            }
+          }
+        ]
+      },
+      "APIResponseIOLCalculation": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/APIResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/IOLCalculation"
+              }
+            }
+          }
+        ]
+      },
+      "APIResponseSyncPull": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/APIResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/SyncPullResponse"
+              }
+            }
+          }
+        ]
+      }
     }
   }
 }
