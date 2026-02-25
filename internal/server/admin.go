@@ -23,6 +23,20 @@ let token = localStorage.getItem('admin_token') || '';
 let refreshToken = localStorage.getItem('admin_refresh_token') || '';
 let currentTab = 'dashboard';
 let isRefreshing = false;
+let currentPage = 1;
+let pageSize = 20;
+
+const roleNames = {
+    'ADMIN': 'Администратор',
+    'CALL_CENTER': 'Колл-центр',
+    'DISTRICT_DOCTOR': 'Районный врач',
+    'SURGEON': 'Хирург',
+    'PATIENT': 'Пациент'
+};
+
+function getRoleName(role) {
+    return roleNames[role] || role;
+}
 
 async function refreshAccessToken() {
     if (isRefreshing) return;
@@ -187,9 +201,10 @@ async function renderDashboard() {
     ` + "`" + `;
 }
 
-async function renderDistricts() {
-    const response = await api('/districts');
+async function renderDistricts(page = 1) {
+    const response = await api('/districts?page=' + page + '&limit=' + pageSize);
     const districts = response.data || response;
+    const meta = response.meta || {};
     let html = ` + "`" + `
     <div class="mb-4">
         <button onclick="showCreateDistrict()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">+ Добавить район</button>
@@ -224,7 +239,16 @@ async function renderDistricts() {
             </tr>` + "`" + `;
         });
     }
-    html += '</tbody></table></div>';
+    html += '</tbody></table>';
+    if (meta.total_pages > 1) {
+        html += '<div class="px-4 py-3 border-t flex items-center justify-between">';
+        html += '<div class="text-sm text-gray-600">Страница ' + page + ' из ' + meta.total_pages + '</div>';
+        html += '<div class="flex gap-2">';
+        if (page > 1) html += '<button onclick="renderDistricts(' + (page-1) + ')" class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Назад</button>';
+        if (page < meta.total_pages) html += '<button onclick="renderDistricts(' + (page+1) + ')" class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Вперёд</button>';
+        html += '</div></div>';
+    }
+    html += '</div>';
     document.getElementById('tab-content').innerHTML = html;
 }
 
@@ -285,10 +309,11 @@ async function deleteDistrict(id) {
     await renderDistricts();
 }
 
-async function renderUsers() {
-    const usersResponse = await api('/admin/users');
+async function renderUsers(page = 1) {
+    const usersResponse = await api('/admin/users?page=' + page + '&limit=' + pageSize);
     const users = usersResponse.data || usersResponse;
-    const districtsResponse = await api('/districts');
+    const meta = usersResponse.meta || {};
+    const districtsResponse = await api('/districts?limit=100');
     const districts = districtsResponse.data || districtsResponse;
     let html = ` + "`" + `
     <div class="mb-4">
@@ -311,7 +336,7 @@ async function renderUsers() {
             </thead>
             <tbody>
     ` + "`" + `;
-    const roleBadge = { ADMIN: 'bg-red-100 text-red-700', SURGEON: 'bg-blue-100 text-blue-700', DISTRICT_DOCTOR: 'bg-green-100 text-green-700', PATIENT: 'bg-gray-100 text-gray-700' };
+    const roleBadge = { ADMIN: 'bg-red-100 text-red-700', CALL_CENTER: 'bg-yellow-100 text-yellow-700', SURGEON: 'bg-blue-100 text-blue-700', DISTRICT_DOCTOR: 'bg-green-100 text-green-700', PATIENT: 'bg-gray-100 text-gray-700' };
     if (Array.isArray(users)) {
         users.forEach(u => {
             const dist = districts.find(d => d.id === u.district_id);
@@ -320,7 +345,7 @@ async function renderUsers() {
                 <td class="px-4 py-3 font-medium">${u.name}</td>
                 <td class="px-4 py-3">${u.email}</td>
                 <td class="px-4 py-3">${u.phone || '—'}</td>
-                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs ${roleBadge[u.role]||'bg-gray-100'}">${u.role}</span></td>
+                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs ${roleBadge[u.role]||'bg-gray-100'}">${getRoleName(u.role)}</span></td>
                 <td class="px-4 py-3">${dist ? dist.name : '—'}</td>
                 <td class="px-4 py-3">${u.is_active ? '<span class="text-green-600">✓</span>' : '<span class="text-red-600">✗</span>'}</td>
                 <td class="px-4 py-3 space-x-2">
@@ -330,7 +355,16 @@ async function renderUsers() {
             </tr>` + "`" + `;
         });
     }
-    html += '</tbody></table></div>';
+    html += '</tbody></table>';
+    if (meta.total_pages > 1) {
+        html += '<div class="px-4 py-3 border-t flex items-center justify-between">';
+        html += '<div class="text-sm text-gray-600">Страница ' + page + ' из ' + meta.total_pages + '</div>';
+        html += '<div class="flex gap-2">';
+        if (page > 1) html += '<button onclick="renderUsers(' + (page-1) + ')" class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Назад</button>';
+        if (page < meta.total_pages) html += '<button onclick="renderUsers(' + (page+1) + ')" class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Вперёд</button>';
+        html += '</div></div>';
+    }
+    html += '</div>';
     document.getElementById('tab-content').innerHTML = html;
     window.allDistricts = districts;
 }
@@ -355,10 +389,11 @@ function userForm(u, fn) {
             <input id="uf-mname" placeholder="Отчество" value="${u.middle_name||''}" class="border rounded px-3 py-2 text-sm">
             <input id="uf-phone" placeholder="Телефон" value="${u.phone||''}" class="border rounded px-3 py-2 text-sm">
             <select id="uf-role" class="border rounded px-3 py-2 text-sm">
-                <option value="PATIENT" ${u.role==='PATIENT'?'selected':''}>PATIENT</option>
-                <option value="DISTRICT_DOCTOR" ${u.role==='DISTRICT_DOCTOR'?'selected':''}>DISTRICT_DOCTOR</option>
-                <option value="SURGEON" ${u.role==='SURGEON'?'selected':''}>SURGEON</option>
-                <option value="ADMIN" ${u.role==='ADMIN'?'selected':''}>ADMIN</option>
+                <option value="PATIENT" ${u.role==='PATIENT'?'selected':''}>Пациент</option>
+                <option value="DISTRICT_DOCTOR" ${u.role==='DISTRICT_DOCTOR'?'selected':''}>Районный врач</option>
+                <option value="SURGEON" ${u.role==='SURGEON'?'selected':''}>Хирург</option>
+                <option value="CALL_CENTER" ${u.role==='CALL_CENTER'?'selected':''}>Колл-центр</option>
+                <option value="ADMIN" ${u.role==='ADMIN'?'selected':''}>Администратор</option>
             </select>
             <select id="uf-district" class="border rounded px-3 py-2 text-sm">
                 <option value="">Без района</option>
@@ -402,10 +437,11 @@ async function deleteUser(id) {
     alert('Удаление пользователей пока не реализовано в API');
 }
 
-async function renderPatients() {
-    const patientsResponse = await api('/patients');
+async function renderPatients(page = 1) {
+    const patientsResponse = await api('/patients?page=' + page + '&limit=' + pageSize);
     const patients = patientsResponse.data || patientsResponse;
-    const districtsResponse = await api('/districts');
+    const meta = patientsResponse.meta || {};
+    const districtsResponse = await api('/districts?limit=100');
     const districts = districtsResponse.data || districtsResponse;
     let items = Array.isArray(patients) ? patients : (patients.patients || []);
     let html = ` + "`" + `
@@ -445,7 +481,16 @@ async function renderPatients() {
             </td>
         </tr>` + "`" + `;
     });
-    html += '</tbody></table></div>';
+    html += '</tbody></table>';
+    if (meta.total_pages > 1) {
+        html += '<div class="px-4 py-3 border-t flex items-center justify-between">';
+        html += '<div class="text-sm text-gray-600">Страница ' + page + ' из ' + meta.total_pages + '</div>';
+        html += '<div class="flex gap-2">';
+        if (page > 1) html += '<button onclick="renderPatients(' + (page-1) + ')" class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Назад</button>';
+        if (page < meta.total_pages) html += '<button onclick="renderPatients(' + (page+1) + ')" class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Вперёд</button>';
+        html += '</div></div>';
+    }
+    html += '</div>';
     document.getElementById('tab-content').innerHTML = html;
     window.allDistricts = districts;
 }
@@ -532,11 +577,12 @@ async function deletePatient(id) {
     alert('Удаление пациентов пока не реализовано в API');
 }
 
-async function renderSurgeries() {
-    const surgeriesResponse = await api('/surgeries');
-    const patientsResponse = await api('/patients');
-    const usersResponse = await api('/admin/users');
+async function renderSurgeries(page = 1) {
+    const surgeriesResponse = await api('/surgeries?page=' + page + '&limit=' + pageSize);
+    const patientsResponse = await api('/patients?limit=100');
+    const usersResponse = await api('/admin/users?limit=100');
     const surgeries = surgeriesResponse.data || surgeriesResponse;
+    const meta = surgeriesResponse.meta || {};
     const patients = patientsResponse.data || patientsResponse;
     const users = usersResponse.data || usersResponse;
     let items = Array.isArray(surgeries) ? surgeries : (surgeries.surgeries || []);
@@ -583,7 +629,16 @@ async function renderSurgeries() {
             </td>
         </tr>` + "`" + `;
     });
-    html += '</tbody></table></div>';
+    html += '</tbody></table>';
+    if (meta.total_pages > 1) {
+        html += '<div class="px-4 py-3 border-t flex items-center justify-between">';
+        html += '<div class="text-sm text-gray-600">Страница ' + page + ' из ' + meta.total_pages + '</div>';
+        html += '<div class="flex gap-2">';
+        if (page > 1) html += '<button onclick="renderSurgeries(' + (page-1) + ')" class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Назад</button>';
+        if (page < meta.total_pages) html += '<button onclick="renderSurgeries(' + (page+1) + ')" class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Вперёд</button>';
+        html += '</div></div>';
+    }
+    html += '</div>';
     document.getElementById('tab-content').innerHTML = html;
     window.allPatients = patientsData;
     window.allUsers = users;

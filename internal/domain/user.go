@@ -9,6 +9,7 @@ const (
 	RoleSurgeon        Role = "SURGEON"
 	RolePatient        Role = "PATIENT"
 	RoleAdmin          Role = "ADMIN"
+	RoleCallCenter     Role = "CALL_CENTER"
 )
 
 type User struct {
@@ -103,7 +104,7 @@ func (u *User) ToResponse() UserResponse {
 
 func ValidRole(r Role) bool {
 	switch r {
-	case RoleDistrictDoctor, RoleSurgeon, RolePatient, RoleAdmin:
+	case RoleDistrictDoctor, RoleSurgeon, RolePatient, RoleAdmin, RoleCallCenter:
 		return true
 	}
 	return false
