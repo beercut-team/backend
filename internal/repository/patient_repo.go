@@ -13,6 +13,7 @@ type PatientRepository interface {
 	FindByAccessCode(ctx context.Context, code string) (*domain.Patient, error)
 	FindAll(ctx context.Context, filters PatientFilters, offset, limit int) ([]domain.Patient, int64, error)
 	Update(ctx context.Context, patient *domain.Patient) error
+	Delete(ctx context.Context, id uint) error
 	UpdateStatus(ctx context.Context, id uint, status domain.PatientStatus) error
 	CreateStatusHistory(ctx context.Context, h *domain.PatientStatusHistory) error
 	FindStatusHistory(ctx context.Context, patientID uint) ([]domain.PatientStatusHistory, error)
@@ -96,6 +97,10 @@ func (r *patientRepository) FindAll(ctx context.Context, filters PatientFilters,
 
 func (r *patientRepository) Update(ctx context.Context, patient *domain.Patient) error {
 	return r.db.WithContext(ctx).Save(patient).Error
+}
+
+func (r *patientRepository) Delete(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Delete(&domain.Patient{}, id).Error
 }
 
 func (r *patientRepository) UpdateStatus(ctx context.Context, id uint, status domain.PatientStatus) error {

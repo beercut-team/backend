@@ -160,3 +160,18 @@ func (h *PatientHandler) Dashboard(c *gin.Context) {
 
 	Success(c, http.StatusOK, stats)
 }
+
+func (h *PatientHandler) Delete(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		BadRequest(c, "неверный id")
+		return
+	}
+
+	if err := h.svc.Delete(c.Request.Context(), uint(id)); err != nil {
+		Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	Success(c, http.StatusOK, domain.MessageResponse{Message: "пациент удалён"})
+}

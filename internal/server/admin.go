@@ -16,6 +16,10 @@ const adminHTML = `<!DOCTYPE html>
         .status-green { background: #efe; color: #060; border-left: 4px solid #0a0; }
         .circular-chart { transform: rotate(-90deg); }
         .circle { stroke-linecap: round; transition: stroke-dasharray 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
+        .animate-slideUp { animation: slideUp 0.3s ease-out; }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -592,8 +596,15 @@ async function updatePatient(id) {
 }
 
 async function deletePatient(id) {
-    if (!confirm('Удалить пациента?')) return;
-    alert('Удаление пациентов пока не реализовано в API');
+    if (!confirm('⚠️ Вы уверены, что хотите удалить этого пациента?\n\nЭто действие необратимо и удалит:\n- Карту пациента\n- Все чек-листы\n- Историю статусов\n- Связанные файлы\n\nПродолжить?')) return;
+
+    try {
+        await api('/patients/' + id, { method: 'DELETE' });
+        alert('✅ Пациент успешно удалён');
+        await renderPatients();
+    } catch (err) {
+        alert('❌ Ошибка удаления: ' + err.message);
+    }
 }
 
 async function showPatientDetails(id) {
@@ -613,7 +624,7 @@ async function showPatientDetails(id) {
 
         const modal = document.createElement('div');
         modal.id = 'patient-modal';
-        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn';
         modal.onclick = (e) => { if (e.target === modal) closePatientModal(); };
 
         const completedItems = checklistItems.filter(i => i.status === 'COMPLETED').length;

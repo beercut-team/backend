@@ -17,6 +17,7 @@ type PatientService interface {
 	GetByAccessCode(ctx context.Context, code string) (*domain.PatientPublicResponse, error)
 	List(ctx context.Context, filters repository.PatientFilters, offset, limit int) ([]domain.Patient, int64, error)
 	Update(ctx context.Context, id uint, req domain.UpdatePatientRequest) (*domain.Patient, error)
+	Delete(ctx context.Context, id uint) error
 	ChangeStatus(ctx context.Context, id uint, req domain.PatientStatusRequest, changedBy uint) error
 	DashboardStats(ctx context.Context, doctorID *uint) (map[domain.PatientStatus]int64, error)
 }
@@ -202,6 +203,24 @@ func (s *patientService) Update(ctx context.Context, id uint, req domain.UpdateP
 		return nil, errors.New("не удалось обновить данные пациента")
 	}
 	return p, nil
+}
+
+func (s *patientService) Delete(ctx context.Context, id uint) error {
+	// Проверяем существование пациента
+	_, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("пациент не найден")
+		}
+		return err
+	}
+
+	// Удаляем пациента (каскадное удаление связанных данных настроено в GORM)
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return errors.New("не удалось удалить пациента")
+	}
+
+	return nil
 }
 
 func (s *patientService) ChangeStatus(ctx context.Context, id uint, req domain.PatientStatusRequest, changedBy uint) error {
