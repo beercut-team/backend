@@ -46,6 +46,7 @@ func main() {
 
 	// --- Seed Users ---
 	hash, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+	adminHash, _ := bcrypt.GenerateFromPassword([]byte("123123123"), bcrypt.DefaultCost)
 
 	users := []domain.User{
 		{
@@ -70,6 +71,11 @@ func main() {
 			Email: "admin@example.com", PasswordHash: string(hash), Name: "Администратор",
 			FirstName: "Админ", LastName: "Системный", MiddleName: "",
 			Phone: "+79001234570", Role: domain.RoleAdmin, IsActive: true,
+		},
+		{
+			Email: "admin@gmail.com", PasswordHash: string(adminHash), Name: "Администратор Панели",
+			FirstName: "Админ", LastName: "Панель", MiddleName: "",
+			Phone: "+79001234571", Role: domain.RoleAdmin, IsActive: true,
 		},
 	}
 

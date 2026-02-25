@@ -9,6 +9,7 @@ import (
 
 type UserRepository interface {
 	Create(ctx context.Context, user *domain.User) error
+	FindAll(ctx context.Context) ([]domain.User, error)
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 	FindByID(ctx context.Context, id uint) (*domain.User, error)
 	UpdateRefreshToken(ctx context.Context, userID uint, token string) error
@@ -24,6 +25,14 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 
 func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
 	return r.db.WithContext(ctx).Create(user).Error
+}
+
+func (r *userRepository) FindAll(ctx context.Context) ([]domain.User, error) {
+	var users []domain.User
+	if err := r.db.WithContext(ctx).Preload("District").Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
 }
 
 func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {

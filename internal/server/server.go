@@ -92,12 +92,19 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	notifHandler := handler.NewNotificationHandler(notifService)
 	printHandler := handler.NewPrintHandler(pdfService)
 	syncHandler := handler.NewSyncHandler(syncService)
+	adminHandler := handler.NewAdminHandler(authService, db)
 
 	// --- Serve OpenAPI docs ---
 	r.StaticFile("/openapi.json", "./openapi.json")
 	r.GET("/docs", func(c *gin.Context) {
 		c.Header("Content-Type", "text/html")
 		c.String(200, scalarHTML)
+	})
+
+	// --- Admin panel ---
+	r.GET("/admin", func(c *gin.Context) {
+		c.Header("Content-Type", "text/html")
+		c.String(200, adminHTML)
 	})
 
 	api := r.Group("/api/v1")
@@ -214,6 +221,14 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 			{
 				sync.POST("/push", syncHandler.Push)
 				sync.GET("/pull", syncHandler.Pull)
+			}
+
+			// Admin
+			admin := protected.Group("/admin")
+			admin.Use(middleware.RequireRole(domain.RoleAdmin))
+			{
+				admin.GET("/users", adminHandler.ListUsers)
+				admin.GET("/stats", adminHandler.Stats)
 			}
 		}
 	}

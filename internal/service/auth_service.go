@@ -16,6 +16,7 @@ type AuthService interface {
 	Refresh(ctx context.Context, req domain.RefreshRequest) (*domain.AuthResponse, error)
 	Logout(ctx context.Context, userID uint) error
 	Me(ctx context.Context, userID uint) (*domain.UserResponse, error)
+	ListUsers(ctx context.Context) ([]domain.UserResponse, error)
 }
 
 type authService struct {
@@ -121,6 +122,19 @@ func (s *authService) Me(ctx context.Context, userID uint) (*domain.UserResponse
 
 	resp := user.ToResponse()
 	return &resp, nil
+}
+
+func (s *authService) ListUsers(ctx context.Context) ([]domain.UserResponse, error) {
+	users, err := s.userRepo.FindAll(ctx)
+	if err != nil {
+		return nil, errors.New("failed to list users")
+	}
+
+	var resp []domain.UserResponse
+	for _, u := range users {
+		resp = append(resp, u.ToResponse())
+	}
+	return resp, nil
 }
 
 func (s *authService) generateTokens(ctx context.Context, user *domain.User) (*domain.AuthResponse, error) {
