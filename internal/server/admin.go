@@ -35,6 +35,12 @@ let isRefreshing = false;
 let currentPage = 1;
 let pageSize = 20;
 
+// Helper function to safely display values
+function safe(value, fallback = '—') {
+    if (value === undefined || value === null || value === '') return fallback;
+    return value;
+}
+
 const roleNames = {
     'ADMIN': 'Администратор',
     'CALL_CENTER': 'Колл-центр',
@@ -286,10 +292,10 @@ function districtForm(d, fn) {
     return ` + "`" + `
     <div class="bg-white rounded-xl shadow p-4 mb-4">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <input id="df-name" placeholder="Название" value="${d.name||''}" class="border rounded px-3 py-2 text-sm">
-            <input id="df-region" placeholder="Регион" value="${d.region||''}" class="border rounded px-3 py-2 text-sm">
-            <input id="df-code" placeholder="Код" value="${d.code||''}" class="border rounded px-3 py-2 text-sm">
-            <input id="df-tz" placeholder="Часовой пояс" value="${d.timezone||''}" class="border rounded px-3 py-2 text-sm">
+            <input id="df-name" placeholder="Название" value="${safe(d.name, '')}" class="border rounded px-3 py-2 text-sm">
+            <input id="df-region" placeholder="Регион" value="${safe(d.region, '')}" class="border rounded px-3 py-2 text-sm">
+            <input id="df-code" placeholder="Код" value="${safe(d.code, '')}" class="border rounded px-3 py-2 text-sm">
+            <input id="df-tz" placeholder="Часовой пояс" value="${safe(d.timezone, '')}" class="border rounded px-3 py-2 text-sm">
         </div>
         <div class="mt-3 flex gap-2">
             <button onclick="${fn}(${d.id||0})" class="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700">Сохранить</button>
@@ -364,9 +370,9 @@ async function renderUsers(page = 1) {
             const dist = districts.find(d => d.id === u.district_id);
             html += ` + "`" + `<tr class="border-t">
                 <td class="px-4 py-3">${u.id}</td>
-                <td class="px-4 py-3 font-medium">${u.name}</td>
-                <td class="px-4 py-3">${u.email}</td>
-                <td class="px-4 py-3">${u.phone || '—'}</td>
+                <td class="px-4 py-3 font-medium">${safe(u.name)}</td>
+                <td class="px-4 py-3">${safe(u.email)}</td>
+                <td class="px-4 py-3">${safe(u.phone)}</td>
                 <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs ${roleBadge[u.role]||'bg-gray-100'}">${getRoleName(u.role)}</span></td>
                 <td class="px-4 py-3">${dist ? dist.name : '—'}</td>
                 <td class="px-4 py-3">${u.is_active ? '<span class="text-green-600">✓</span>' : '<span class="text-red-600">✗</span>'}</td>
@@ -404,12 +410,12 @@ function userForm(u, fn) {
     return ` + "`" + `
     <div class="bg-white rounded-xl shadow p-4 mb-4">
         <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <input id="uf-email" placeholder="Email" value="${u.email||''}" class="border rounded px-3 py-2 text-sm" ${u.id?'disabled':''}>
-            <input id="uf-name" placeholder="Полное имя" value="${u.name||''}" class="border rounded px-3 py-2 text-sm">
-            <input id="uf-fname" placeholder="Имя" value="${u.first_name||''}" class="border rounded px-3 py-2 text-sm">
-            <input id="uf-lname" placeholder="Фамилия" value="${u.last_name||''}" class="border rounded px-3 py-2 text-sm">
-            <input id="uf-mname" placeholder="Отчество" value="${u.middle_name||''}" class="border rounded px-3 py-2 text-sm">
-            <input id="uf-phone" placeholder="Телефон" value="${u.phone||''}" class="border rounded px-3 py-2 text-sm">
+            <input id="uf-email" placeholder="Email" value="${safe(u.email, '')}" class="border rounded px-3 py-2 text-sm" ${u.id?'disabled':''}>
+            <input id="uf-name" placeholder="Полное имя" value="${safe(u.name, '')}" class="border rounded px-3 py-2 text-sm">
+            <input id="uf-fname" placeholder="Имя" value="${safe(u.first_name, '')}" class="border rounded px-3 py-2 text-sm">
+            <input id="uf-lname" placeholder="Фамилия" value="${safe(u.last_name, '')}" class="border rounded px-3 py-2 text-sm">
+            <input id="uf-mname" placeholder="Отчество" value="${safe(u.middle_name, '')}" class="border rounded px-3 py-2 text-sm">
+            <input id="uf-phone" placeholder="Телефон" value="${safe(u.phone, '')}" class="border rounded px-3 py-2 text-sm">
             <select id="uf-role" class="border rounded px-3 py-2 text-sm">
                 <option value="PATIENT" ${u.role==='PATIENT'?'selected':''}>Пациент</option>
                 <option value="DISTRICT_DOCTOR" ${u.role==='DISTRICT_DOCTOR'?'selected':''}>Районный врач</option>
@@ -492,11 +498,11 @@ async function renderPatients(page = 1) {
         const rowColor = getStatusColor(p.status);
         html += ` + "`" + `<tr class="border-t ${rowColor} hover:bg-blue-50 cursor-pointer" onclick="showPatientDetails(${p.id})">
             <td class="px-4 py-3">${p.id}</td>
-            <td class="px-4 py-3 font-medium">${p.last_name} ${p.first_name} ${p.middle_name||''}</td>
-            <td class="px-4 py-3">${p.phone || '—'}</td>
-            <td class="px-4 py-3 max-w-xs truncate">${p.diagnosis || '—'}</td>
-            <td class="px-4 py-3"><span class="text-xs">${p.operation_type || '—'}</span></td>
-            <td class="px-4 py-3">${p.eye || '—'}</td>
+            <td class="px-4 py-3 font-medium">${safe(p.last_name)} ${safe(p.first_name)} ${safe(p.middle_name, '')}</td>
+            <td class="px-4 py-3">${safe(p.phone)}</td>
+            <td class="px-4 py-3 max-w-xs truncate">${safe(p.diagnosis)}</td>
+            <td class="px-4 py-3"><span class="text-xs">${safe(p.operation_type)}</span></td>
+            <td class="px-4 py-3">${safe(p.eye)}</td>
             <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs ${statusBadge[p.status]||'bg-gray-100'}">${p.status}</span></td>
             <td class="px-4 py-3 space-x-2" onclick="event.stopPropagation()">
                 <button onclick='editPatient(${JSON.stringify(p).replace(/'/g,"&#39;")})' class="text-blue-600 hover:underline text-xs">Изменить</button>
@@ -531,13 +537,13 @@ function patientForm(p, fn) {
     return ` + "`" + `
     <div class="bg-white rounded-xl shadow p-4 mb-4">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <input id="pf-fname" placeholder="Имя" value="${p.first_name||''}" class="border rounded px-3 py-2 text-sm">
-            <input id="pf-lname" placeholder="Фамилия" value="${p.last_name||''}" class="border rounded px-3 py-2 text-sm">
-            <input id="pf-mname" placeholder="Отчество" value="${p.middle_name||''}" class="border rounded px-3 py-2 text-sm">
-            <input id="pf-phone" placeholder="Телефон" value="${p.phone||''}" class="border rounded px-3 py-2 text-sm">
-            <input id="pf-email" placeholder="Email" value="${p.email||''}" class="border rounded px-3 py-2 text-sm">
+            <input id="pf-fname" placeholder="Имя" value="${safe(p.first_name, '')}" class="border rounded px-3 py-2 text-sm">
+            <input id="pf-lname" placeholder="Фамилия" value="${safe(p.last_name, '')}" class="border rounded px-3 py-2 text-sm">
+            <input id="pf-mname" placeholder="Отчество" value="${safe(p.middle_name, '')}" class="border rounded px-3 py-2 text-sm">
+            <input id="pf-phone" placeholder="Телефон" value="${safe(p.phone, '')}" class="border rounded px-3 py-2 text-sm">
+            <input id="pf-email" placeholder="Email" value="${safe(p.email, '')}" class="border rounded px-3 py-2 text-sm">
             <input id="pf-dob" type="date" placeholder="Дата рождения" value="${p.date_of_birth||''}" class="border rounded px-3 py-2 text-sm">
-            <input id="pf-diagnosis" placeholder="Диагноз" value="${p.diagnosis||''}" class="border rounded px-3 py-2 text-sm col-span-2">
+            <input id="pf-diagnosis" placeholder="Диагноз" value="${safe(p.diagnosis, '')}" class="border rounded px-3 py-2 text-sm col-span-2">
             <select id="pf-optype" class="border rounded px-3 py-2 text-sm">
                 <option value="PHACO" ${p.operation_type==='PHACO'?'selected':''}>PHACO</option>
                 <option value="ANTIGLAUCOMA" ${p.operation_type==='ANTIGLAUCOMA'?'selected':''}>ANTIGLAUCOMA</option>
@@ -647,11 +653,11 @@ async function showPatientDetails(id) {
                     <div class="flex items-center justify-between">
                         <div>
                             <div class="text-sm text-gray-600 mb-1">🔑 Код доступа пациента</div>
-                            <div class="text-3xl font-mono font-bold text-green-700">${patient.access_code}</div>
-                            <div class="text-xs text-gray-500 mt-2">Для Telegram: /start ${patient.access_code}</div>
-                            <div class="text-xs text-gray-500">Для сайта: /patient?code=${patient.access_code}</div>
+                            <div class="text-3xl font-mono font-bold text-green-700">${safe(patient.access_code, 'Не задан')}</div>
+                            <div class="text-xs text-gray-500 mt-2">Для Telegram: /start ${safe(patient.access_code, 'Не задан')}</div>
+                            <div class="text-xs text-gray-500">Для сайта: /patient?code=${safe(patient.access_code, 'Не задан')}</div>
                         </div>
-                        <button onclick="copyAccessCode('${patient.access_code}')" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
+                        <button onclick="copyAccessCode('${safe(patient.access_code, 'Не задан')}')" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
                             📋 Копировать
                         </button>
                     </div>
@@ -664,11 +670,11 @@ async function showPatientDetails(id) {
                             <span class="text-blue-600 mr-2">👤</span> Личные данные
                         </h3>
                         <div class="space-y-2 text-sm">
-                            <div><span class="text-gray-600">ФИО:</span> <span class="font-medium">${patient.last_name} ${patient.first_name} ${patient.middle_name||''}</span></div>
+                            <div><span class="text-gray-600">ФИО:</span> <span class="font-medium">${safe(patient.last_name)} ${safe(patient.first_name)} ${safe(patient.middle_name, '')}</span></div>
                             <div><span class="text-gray-600">Дата рождения:</span> <span class="font-medium">${dob}</span></div>
-                            <div><span class="text-gray-600">Телефон:</span> <span class="font-medium">${patient.phone || '—'}</span></div>
-                            <div><span class="text-gray-600">Email:</span> <span class="font-medium">${patient.email || '—'}</span></div>
-                            <div><span class="text-gray-600">Адрес:</span> <span class="font-medium">${patient.address || '—'}</span></div>
+                            <div><span class="text-gray-600">Телефон:</span> <span class="font-medium">${safe(patient.phone)}</span></div>
+                            <div><span class="text-gray-600">Email:</span> <span class="font-medium">${safe(patient.email)}</span></div>
+                            <div><span class="text-gray-600">Адрес:</span> <span class="font-medium">${safe(patient.address)}</span></div>
                         </div>
                     </div>
 
@@ -677,10 +683,10 @@ async function showPatientDetails(id) {
                             <span class="text-red-600 mr-2">📋</span> Документы
                         </h3>
                         <div class="space-y-2 text-sm">
-                            <div><span class="text-gray-600">СНИЛС:</span> <span class="font-medium">${patient.snils || '—'}</span></div>
-                            <div><span class="text-gray-600">Паспорт:</span> <span class="font-medium">${patient.passport_series || ''} ${patient.passport_number || '—'}</span></div>
-                            <div><span class="text-gray-600">Полис ОМС:</span> <span class="font-medium">${patient.policy_number || '—'}</span></div>
-                            <div><span class="text-gray-600">Район:</span> <span class="font-medium">${patient.district?.name || '—'}</span></div>
+                            <div><span class="text-gray-600">СНИЛС:</span> <span class="font-medium">${safe(patient.snils)}</span></div>
+                            <div><span class="text-gray-600">Паспорт:</span> <span class="font-medium">${safe(patient.passport_series, '')} ${safe(patient.passport_number)}</span></div>
+                            <div><span class="text-gray-600">Полис ОМС:</span> <span class="font-medium">${safe(patient.policy_number)}</span></div>
+                            <div><span class="text-gray-600">Район:</span> <span class="font-medium">${patient.district ? safe(patient.district.name) : '—'}</span></div>
                         </div>
                     </div>
                 </div>
@@ -691,11 +697,11 @@ async function showPatientDetails(id) {
                         <span class="text-blue-600 mr-2">🏥</span> Медицинская информация
                     </h3>
                     <div class="grid md:grid-cols-2 gap-4 text-sm">
-                        <div><span class="text-gray-600">Диагноз:</span> <span class="font-medium">${patient.diagnosis || '—'}</span></div>
-                        <div><span class="text-gray-600">Тип операции:</span> <span class="font-medium">${patient.operation_type || '—'}</span></div>
-                        <div><span class="text-gray-600">Глаз:</span> <span class="font-medium">${patient.eye || '—'}</span></div>
+                        <div><span class="text-gray-600">Диагноз:</span> <span class="font-medium">${safe(patient.diagnosis)}</span></div>
+                        <div><span class="text-gray-600">Тип операции:</span> <span class="font-medium">${safe(patient.operation_type)}</span></div>
+                        <div><span class="text-gray-600">Глаз:</span> <span class="font-medium">${safe(patient.eye)}</span></div>
                         <div><span class="text-gray-600">Дата операции:</span> <span class="font-medium">${surgeryDate}</span></div>
-                        <div class="md:col-span-2"><span class="text-gray-600">Заметки:</span> <span class="font-medium">${patient.notes || '—'}</span></div>
+                        <div class="md:col-span-2"><span class="text-gray-600">Заметки:</span> <span class="font-medium">${safe(patient.notes)}</span></div>
                     </div>
                 </div>
 
@@ -743,7 +749,7 @@ async function showPatientDetails(id) {
 
                 <!-- Действия -->
                 <div class="flex gap-3 pt-4 border-t">
-                    <a href="/patient?code=${patient.access_code}" target="_blank" class="flex-1 bg-blue-600 text-white text-center px-4 py-2 rounded-lg hover:bg-blue-700">
+                    <a href="/patient?code=${safe(patient.access_code, 'Не задан')}" target="_blank" class="flex-1 bg-blue-600 text-white text-center px-4 py-2 rounded-lg hover:bg-blue-700">
                         🔗 Открыть публичную страницу
                     </a>
                     <button onclick="closePatientModal()" class="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">
@@ -861,7 +867,7 @@ function surgeryForm(s, fn) {
             </select>
             <select id="sf-surgeon" class="border rounded px-3 py-2 text-sm">
                 <option value="">Выберите хирурга</option>
-                ${surgeons.map(u => ` + "`" + `<option value="${u.id}" ${s.surgeon_id===u.id?'selected':''}>${u.name}</option>` + "`" + `).join('')}
+                ${surgeons.map(u => ` + "`" + `<option value="${u.id}" ${s.surgeon_id===u.id?'selected':''}>${safe(u.name)}</option>` + "`" + `).join('')}
             </select>
             <input id="sf-date" type="date" value="${s.scheduled_date||''}" class="border rounded px-3 py-2 text-sm">
             <select id="sf-status" class="border rounded px-3 py-2 text-sm">
