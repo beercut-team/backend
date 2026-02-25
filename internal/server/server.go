@@ -107,6 +107,12 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		c.String(200, adminHTML)
 	})
 
+	// --- Patient public page ---
+	r.GET("/patient", func(c *gin.Context) {
+		c.Header("Content-Type", "text/html")
+		c.String(200, patientPublicHTML)
+	})
+
 	api := r.Group("/api/v1")
 	{
 		// Public auth routes

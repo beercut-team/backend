@@ -11,6 +11,9 @@ const adminHTML = `<!DOCTYPE html>
         .tab-active { border-bottom: 2px solid #3b82f6; color: #3b82f6; font-weight: 600; }
         .loader { border: 3px solid #f3f4f6; border-top: 3px solid #3b82f6; border-radius: 50%; width: 24px; height: 24px; animation: spin 0.8s linear infinite; display: inline-block; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        .status-red { background: #fee; color: #c00; border-left: 4px solid #c00; }
+        .status-yellow { background: #ffc; color: #960; border-left: 4px solid #fa0; }
+        .status-green { background: #efe; color: #060; border-left: 4px solid #0a0; }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -34,8 +37,21 @@ const roleNames = {
     'PATIENT': 'Пациент'
 };
 
+const statusColors = {
+    'NEW': 'status-yellow',
+    'PREPARATION': 'status-yellow',
+    'REVIEW_NEEDED': 'status-yellow',
+    'APPROVED': 'status-green',
+    'REJECTED': 'status-red',
+    'SCHEDULED': 'status-green'
+};
+
 function getRoleName(role) {
     return roleNames[role] || role;
+}
+
+function getStatusColor(status) {
+    return statusColors[status] || '';
 }
 
 async function refreshAccessToken() {
@@ -467,7 +483,8 @@ async function renderPatients(page = 1) {
     ` + "`" + `;
     const statusBadge = { PREPARATION: 'bg-yellow-100 text-yellow-700', REVIEW_NEEDED: 'bg-blue-100 text-blue-700', APPROVED: 'bg-green-100 text-green-700', REJECTED: 'bg-red-100 text-red-700', SCHEDULED: 'bg-purple-100 text-purple-700' };
     items.forEach(p => {
-        html += ` + "`" + `<tr class="border-t">
+        const rowColor = getStatusColor(p.status);
+        html += ` + "`" + `<tr class="border-t ${rowColor}">
             <td class="px-4 py-3">${p.id}</td>
             <td class="px-4 py-3 font-medium">${p.last_name} ${p.first_name} ${p.middle_name||''}</td>
             <td class="px-4 py-3">${p.phone || '—'}</td>
