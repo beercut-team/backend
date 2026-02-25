@@ -151,7 +151,8 @@ async function renderDashboard() {
 }
 
 async function renderDistricts() {
-    const districts = await api('/districts');
+    const response = await api('/districts');
+    const districts = response.data || response;
     let html = ` + "`" + `
     <div class="mb-4">
         <button onclick="showCreateDistrict()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">+ Добавить район</button>
@@ -248,8 +249,10 @@ async function deleteDistrict(id) {
 }
 
 async function renderUsers() {
-    const users = await api('/admin/users');
-    const districts = await api('/districts');
+    const usersResponse = await api('/admin/users');
+    const users = usersResponse.data || usersResponse;
+    const districtsResponse = await api('/districts');
+    const districts = districtsResponse.data || districtsResponse;
     let html = ` + "`" + `
     <div class="mb-4">
         <button onclick="showCreateUser()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">+ Добавить пользователя</button>
@@ -363,9 +366,11 @@ async function deleteUser(id) {
 }
 
 async function renderPatients() {
-    const patients = await api('/patients');
-    const districts = await api('/districts');
-    let items = Array.isArray(patients) ? patients : (patients.data || patients.patients || []);
+    const patientsResponse = await api('/patients');
+    const patients = patientsResponse.data || patientsResponse;
+    const districtsResponse = await api('/districts');
+    const districts = districtsResponse.data || districtsResponse;
+    let items = Array.isArray(patients) ? patients : (patients.patients || []);
     let html = ` + "`" + `
     <div class="mb-4">
         <button onclick="showCreatePatient()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">+ Добавить пациента</button>
@@ -491,11 +496,14 @@ async function deletePatient(id) {
 }
 
 async function renderSurgeries() {
-    const surgeries = await api('/surgeries');
-    const patients = await api('/patients');
-    const users = await api('/admin/users');
-    let items = Array.isArray(surgeries) ? surgeries : (surgeries.data || surgeries.surgeries || []);
-    let patientsData = Array.isArray(patients) ? patients : (patients.data || patients.patients || []);
+    const surgeriesResponse = await api('/surgeries');
+    const patientsResponse = await api('/patients');
+    const usersResponse = await api('/admin/users');
+    const surgeries = surgeriesResponse.data || surgeriesResponse;
+    const patients = patientsResponse.data || patientsResponse;
+    const users = usersResponse.data || usersResponse;
+    let items = Array.isArray(surgeries) ? surgeries : (surgeries.surgeries || []);
+    let patientsData = Array.isArray(patients) ? patients : (patients.patients || []);
     let html = ` + "`" + `
     <div class="mb-4">
         <button onclick="showCreateSurgery()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">+ Запланировать операцию</button>
