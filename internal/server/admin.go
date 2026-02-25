@@ -210,19 +210,19 @@ async function renderDashboard() {
     document.getElementById('tab-content').innerHTML = ` + "`" + `
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-white rounded-xl shadow p-6 text-center">
-            <div class="text-3xl font-bold text-blue-600">${stats.users}</div>
+            <div class="text-3xl font-bold text-blue-600">${safe(stats.users, 0)}</div>
             <div class="text-gray-500 mt-1">Пользователи</div>
         </div>
         <div class="bg-white rounded-xl shadow p-6 text-center">
-            <div class="text-3xl font-bold text-green-600">${stats.patients}</div>
+            <div class="text-3xl font-bold text-green-600">${safe(stats.patients, 0)}</div>
             <div class="text-gray-500 mt-1">Пациенты</div>
         </div>
         <div class="bg-white rounded-xl shadow p-6 text-center">
-            <div class="text-3xl font-bold text-purple-600">${stats.districts}</div>
+            <div class="text-3xl font-bold text-purple-600">${safe(stats.districts, 0)}</div>
             <div class="text-gray-500 mt-1">Районы</div>
         </div>
         <div class="bg-white rounded-xl shadow p-6 text-center">
-            <div class="text-3xl font-bold text-orange-600">${stats.surgeries}</div>
+            <div class="text-3xl font-bold text-orange-600">${safe(stats.surgeries, 0)}</div>
             <div class="text-gray-500 mt-1">Операции</div>
         </div>
     </div>
@@ -255,14 +255,14 @@ async function renderDistricts(page = 1) {
     if (Array.isArray(districts)) {
         districts.forEach(d => {
             html += ` + "`" + `<tr class="border-t">
-                <td class="px-4 py-3">${d.id}</td>
-                <td class="px-4 py-3 font-medium">${d.name}</td>
-                <td class="px-4 py-3">${d.region}</td>
-                <td class="px-4 py-3"><span class="bg-gray-100 px-2 py-0.5 rounded text-xs">${d.code}</span></td>
-                <td class="px-4 py-3">${d.timezone}</td>
+                <td class="px-4 py-3">${safe(d.id)}</td>
+                <td class="px-4 py-3 font-medium">${safe(d.name)}</td>
+                <td class="px-4 py-3">${safe(d.region)}</td>
+                <td class="px-4 py-3"><span class="bg-gray-100 px-2 py-0.5 rounded text-xs">${safe(d.code)}</span></td>
+                <td class="px-4 py-3">${safe(d.timezone)}</td>
                 <td class="px-4 py-3 space-x-2">
                     <button onclick='editDistrict(${JSON.stringify(d).replace(/'/g,"&#39;")})' class="text-blue-600 hover:underline text-xs">Изменить</button>
-                    <button onclick="deleteDistrict(${d.id})" class="text-red-600 hover:underline text-xs">Удалить</button>
+                    <button onclick="deleteDistrict(${safe(d.id)})" class="text-red-600 hover:underline text-xs">Удалить</button>
                 </td>
             </tr>` + "`" + `;
         });
@@ -369,7 +369,7 @@ async function renderUsers(page = 1) {
         users.forEach(u => {
             const dist = districts.find(d => d.id === u.district_id);
             html += ` + "`" + `<tr class="border-t">
-                <td class="px-4 py-3">${u.id}</td>
+                <td class="px-4 py-3">${safe(u.id)}</td>
                 <td class="px-4 py-3 font-medium">${safe(u.name)}</td>
                 <td class="px-4 py-3">${safe(u.email)}</td>
                 <td class="px-4 py-3">${safe(u.phone)}</td>
@@ -378,7 +378,7 @@ async function renderUsers(page = 1) {
                 <td class="px-4 py-3">${u.is_active ? '<span class="text-green-600">✓</span>' : '<span class="text-red-600">✗</span>'}</td>
                 <td class="px-4 py-3 space-x-2">
                     <button onclick='editUser(${JSON.stringify(u).replace(/'/g,"&#39;")})' class="text-blue-600 hover:underline text-xs">Изменить</button>
-                    <button onclick="deleteUser(${u.id})" class="text-red-600 hover:underline text-xs">Удалить</button>
+                    <button onclick="deleteUser(${safe(u.id)})" class="text-red-600 hover:underline text-xs">Удалить</button>
                 </td>
             </tr>` + "`" + `;
         });
@@ -425,7 +425,7 @@ function userForm(u, fn) {
             </select>
             <select id="uf-district" class="border rounded px-3 py-2 text-sm">
                 <option value="">Без района</option>
-                ${districts.map(d => ` + "`" + `<option value="${d.id}" ${u.district_id===d.id?'selected':''}>${d.name}</option>` + "`" + `).join('')}
+                ${districts.map(d => ` + "`" + `<option value="${safe(d.id)}" ${u.district_id===d.id?'selected':''}>${safe(d.name)}</option>` + "`" + `).join('')}
             </select>
             ${!u.id ? '<input id="uf-password" type="password" placeholder="Пароль" class="border rounded px-3 py-2 text-sm">' : ''}
         </div>
@@ -496,8 +496,8 @@ async function renderPatients(page = 1) {
     const statusBadge = { PREPARATION: 'bg-yellow-100 text-yellow-700', REVIEW_NEEDED: 'bg-blue-100 text-blue-700', APPROVED: 'bg-green-100 text-green-700', REJECTED: 'bg-red-100 text-red-700', SCHEDULED: 'bg-purple-100 text-purple-700' };
     items.forEach(p => {
         const rowColor = getStatusColor(p.status);
-        html += ` + "`" + `<tr class="border-t ${rowColor} hover:bg-blue-50 cursor-pointer" onclick="showPatientDetails(${p.id})">
-            <td class="px-4 py-3">${p.id}</td>
+        html += ` + "`" + `<tr class="border-t ${rowColor} hover:bg-blue-50 cursor-pointer" onclick="showPatientDetails(${safe(p.id)})">
+            <td class="px-4 py-3">${safe(p.id)}</td>
             <td class="px-4 py-3 font-medium">${safe(p.last_name)} ${safe(p.first_name)} ${safe(p.middle_name, '')}</td>
             <td class="px-4 py-3">${safe(p.phone)}</td>
             <td class="px-4 py-3 max-w-xs truncate">${safe(p.diagnosis)}</td>
@@ -506,7 +506,7 @@ async function renderPatients(page = 1) {
             <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs ${statusBadge[p.status]||'bg-gray-100'}">${p.status}</span></td>
             <td class="px-4 py-3 space-x-2" onclick="event.stopPropagation()">
                 <button onclick='editPatient(${JSON.stringify(p).replace(/'/g,"&#39;")})' class="text-blue-600 hover:underline text-xs">Изменить</button>
-                <button onclick="deletePatient(${p.id})" class="text-red-600 hover:underline text-xs">Удалить</button>
+                <button onclick="deletePatient(${safe(p.id)})" class="text-red-600 hover:underline text-xs">Удалить</button>
             </td>
         </tr>` + "`" + `;
     });
@@ -542,7 +542,7 @@ function patientForm(p, fn) {
             <input id="pf-mname" placeholder="Отчество" value="${safe(p.middle_name, '')}" class="border rounded px-3 py-2 text-sm">
             <input id="pf-phone" placeholder="Телефон" value="${safe(p.phone, '')}" class="border rounded px-3 py-2 text-sm">
             <input id="pf-email" placeholder="Email" value="${safe(p.email, '')}" class="border rounded px-3 py-2 text-sm">
-            <input id="pf-dob" type="date" placeholder="Дата рождения" value="${p.date_of_birth||''}" class="border rounded px-3 py-2 text-sm">
+            <input id="pf-dob" type="date" placeholder="Дата рождения" value="${safe(p.date_of_birth, '')}" class="border rounded px-3 py-2 text-sm">
             <input id="pf-diagnosis" placeholder="Диагноз" value="${safe(p.diagnosis, '')}" class="border rounded px-3 py-2 text-sm col-span-2">
             <select id="pf-optype" class="border rounded px-3 py-2 text-sm">
                 <option value="PHACO" ${p.operation_type==='PHACO'?'selected':''}>PHACO</option>
@@ -556,9 +556,9 @@ function patientForm(p, fn) {
                 <option value="OU" ${p.eye==='OU'?'selected':''}>OU (оба)</option>
             </select>
             <select id="pf-district" class="border rounded px-3 py-2 text-sm">
-                ${districts.map(d => ` + "`" + `<option value="${d.id}" ${p.district_id===d.id?'selected':''}>${d.name}</option>` + "`" + `).join('')}
+                ${districts.map(d => ` + "`" + `<option value="${safe(d.id)}" ${p.district_id===d.id?'selected':''}>${safe(d.name)}</option>` + "`" + `).join('')}
             </select>
-            <textarea id="pf-notes" placeholder="Заметки" class="border rounded px-3 py-2 text-sm col-span-2">${p.notes||''}</textarea>
+            <textarea id="pf-notes" placeholder="Заметки" class="border rounded px-3 py-2 text-sm col-span-2">${safe(p.notes, '')}</textarea>
         </div>
         <div class="mt-3 flex gap-2">
             <button onclick="${fn}(${p.id||0})" class="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700">Сохранить</button>
@@ -643,7 +643,7 @@ async function showPatientDetails(id) {
         modal.innerHTML = ` + "`" + `
         <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 flex justify-between items-center rounded-t-2xl">
-                <h2 class="text-2xl font-bold">Карта пациента #${patient.id}</h2>
+                <h2 class="text-2xl font-bold">Карта пациента #${safe(patient.id)}</h2>
                 <button onclick="closePatientModal()" class="text-white hover:text-gray-200 text-3xl leading-none">&times;</button>
             </div>
 
@@ -712,7 +712,7 @@ async function showPatientDetails(id) {
                     </h3>
                     <div class="flex items-center justify-between">
                         <div>
-                            <div class="text-2xl font-bold text-gray-800">${patient.status}</div>
+                            <div class="text-2xl font-bold text-gray-800">${safe(patient.status)}</div>
                             <div class="text-sm text-gray-600 mt-1">Прогресс чек-листа: ${completedItems}/${totalItems} (${progress}%)</div>
                         </div>
                         <div class="w-32 h-32">
@@ -738,8 +738,8 @@ async function showPatientDetails(id) {
                             return ` + "`" + `<div class="flex items-start gap-2 text-sm p-2 bg-white rounded">
                                 <span class="text-lg">${statusIcon}</span>
                                 <div class="flex-1">
-                                    <div class="font-medium ${statusColor}">${item.title}</div>
-                                    ${item.description ? ` + "`" + `<div class="text-xs text-gray-500">${item.description}</div>` + "`" + ` : ''}
+                                    <div class="font-medium ${statusColor}">${safe(item.title)}</div>
+                                    ${item.description ? ` + "`" + `<div class="text-xs text-gray-500">${safe(item.description, '')}</div>` + "`" + ` : ''}
                                 </div>
                             </div>` + "`" + `;
                         }).join('')}
@@ -818,16 +818,16 @@ async function renderSurgeries(page = 1) {
         const surgeon = s.surgeon ? s.surgeon.name : ('ID ' + s.surgeon_id);
         const date = s.scheduled_date ? new Date(s.scheduled_date).toLocaleDateString('ru-RU') : '—';
         html += ` + "`" + `<tr class="border-t">
-            <td class="px-4 py-3">${s.id}</td>
+            <td class="px-4 py-3">${safe(s.id)}</td>
             <td class="px-4 py-3 font-medium">${patient}</td>
             <td class="px-4 py-3">${surgeon}</td>
             <td class="px-4 py-3">${date}</td>
-            <td class="px-4 py-3 text-xs">${s.operation_type || '—'}</td>
-            <td class="px-4 py-3">${s.eye || '—'}</td>
-            <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs">${s.status}</span></td>
+            <td class="px-4 py-3 text-xs">${safe(s.operation_type)}</td>
+            <td class="px-4 py-3">${safe(s.eye)}</td>
+            <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs">${safe(s.status)}</span></td>
             <td class="px-4 py-3 space-x-2">
                 <button onclick='editSurgery(${JSON.stringify(s).replace(/'/g,"&#39;")})' class="text-blue-600 hover:underline text-xs">Изменить</button>
-                <button onclick="deleteSurgery(${s.id})" class="text-red-600 hover:underline text-xs">Удалить</button>
+                <button onclick="deleteSurgery(${safe(s.id)})" class="text-red-600 hover:underline text-xs">Удалить</button>
             </td>
         </tr>` + "`" + `;
     });
@@ -863,20 +863,20 @@ function surgeryForm(s, fn) {
         <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
             <select id="sf-patient" class="border rounded px-3 py-2 text-sm">
                 <option value="">Выберите пациента</option>
-                ${patients.map(p => ` + "`" + `<option value="${p.id}" ${s.patient_id===p.id?'selected':''}>${p.last_name} ${p.first_name}</option>` + "`" + `).join('')}
+                ${patients.map(p => ` + "`" + `<option value="${safe(p.id)}" ${s.patient_id===p.id?'selected':''}>${p.last_name} ${p.first_name}</option>` + "`" + `).join('')}
             </select>
             <select id="sf-surgeon" class="border rounded px-3 py-2 text-sm">
                 <option value="">Выберите хирурга</option>
-                ${surgeons.map(u => ` + "`" + `<option value="${u.id}" ${s.surgeon_id===u.id?'selected':''}>${safe(u.name)}</option>` + "`" + `).join('')}
+                ${surgeons.map(u => ` + "`" + `<option value="${safe(u.id)}" ${s.surgeon_id===u.id?'selected':''}>${safe(u.name)}</option>` + "`" + `).join('')}
             </select>
-            <input id="sf-date" type="date" value="${s.scheduled_date||''}" class="border rounded px-3 py-2 text-sm">
+            <input id="sf-date" type="date" value="${safe(s.scheduled_date, '')}" class="border rounded px-3 py-2 text-sm">
             <select id="sf-status" class="border rounded px-3 py-2 text-sm">
                 <option value="SCHEDULED" ${s.status==='SCHEDULED'?'selected':''}>SCHEDULED</option>
                 <option value="IN_PROGRESS" ${s.status==='IN_PROGRESS'?'selected':''}>IN_PROGRESS</option>
                 <option value="COMPLETED" ${s.status==='COMPLETED'?'selected':''}>COMPLETED</option>
                 <option value="CANCELLED" ${s.status==='CANCELLED'?'selected':''}>CANCELLED</option>
             </select>
-            <textarea id="sf-notes" placeholder="Заметки" class="border rounded px-3 py-2 text-sm col-span-2">${s.notes||''}</textarea>
+            <textarea id="sf-notes" placeholder="Заметки" class="border rounded px-3 py-2 text-sm col-span-2">${safe(s.notes, '')}</textarea>
         </div>
         <div class="mt-3 flex gap-2">
             <button onclick="${fn}(${s.id||0})" class="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700">Сохранить</button>
