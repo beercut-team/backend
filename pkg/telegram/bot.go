@@ -52,7 +52,16 @@ func (b *Bot) Start() {
 			if update.Message == nil {
 				continue
 			}
-			b.handleMessage(update.Message)
+
+			// Recover from panics to keep bot running
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						log.Error().Interface("panic", r).Int64("chat_id", update.Message.Chat.ID).Msg("паника в обработчике Telegram сообщения")
+					}
+				}()
+				b.handleMessage(update.Message)
+			}()
 		}
 	}()
 
@@ -62,6 +71,9 @@ func (b *Bot) Start() {
 func (b *Bot) handleMessage(msg *tgbotapi.Message) {
 	ctx := context.Background()
 	text := strings.TrimSpace(msg.Text)
+
+	// Log all incoming messages for debugging
+	log.Info().Int64("chat_id", msg.Chat.ID).Str("text", text).Msg("получено Telegram сообщение")
 
 	switch {
 	case strings.HasPrefix(text, "/start"):
