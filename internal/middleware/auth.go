@@ -13,19 +13,29 @@ const userIDKey = "user_id"
 
 func Auth(tokenService service.TokenService) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		var token string
+
+		// Try Authorization header first
 		header := c.GetHeader("Authorization")
-		if header == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, domain.ErrorResponse{Error: "отсутствует заголовок авторизации"})
+		if header != "" {
+			parts := strings.SplitN(header, " ", 2)
+			if len(parts) == 2 && strings.ToLower(parts[0]) == "bearer" {
+				token = parts[1]
+			}
+		}
+
+		// Fall back to query parameter if no header
+		if token == "" {
+			token = c.Query("token")
+		}
+
+		// No token found in either location
+		if token == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, domain.ErrorResponse{Error: "отсутствует токен авторизации"})
 			return
 		}
 
-		parts := strings.SplitN(header, " ", 2)
-		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, domain.ErrorResponse{Error: "неверный заголовок авторизации"})
-			return
-		}
-
-		userID, role, err := tokenService.ValidateAccessToken(parts[1])
+		userID, role, err := tokenService.ValidateAccessToken(token)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, domain.ErrorResponse{Error: "недействительный или просроченный токен"})
 			return
