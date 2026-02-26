@@ -185,6 +185,7 @@ backend/
 
 ### Чек-листы
 - `GET /api/v1/checklists/patient/:patientId` — Чек-лист пациента
+- `POST /api/v1/checklists` — Создать пункт чек-листа (районный врач, хирург, администратор)
 - `PUT /api/v1/checklists/:id` — Обновить пункт чек-листа
 - `PUT /api/v1/checklists/:id/review` — Проверить пункт (хирург)
 - `GET /api/v1/checklists/patient/:patientId/progress` — Прогресс выполнения

@@ -257,6 +257,25 @@ GET /checklists/patient/:patientId
 Authorization: Bearer <access_token>
 ```
 
+### Создать пункт чек-листа
+
+```http
+POST /checklists
+Authorization: Bearer <access_token>
+Content-Type: application/json
+
+{
+  "patient_id": 1,
+  "name": "Консультация кардиолога",
+  "description": "При наличии гипертонии или ИБС",
+  "category": "Заключения",
+  "is_required": true,
+  "expires_in_days": 30
+}
+```
+
+**Доступ**: Районный врач, хирург, администратор
+
 ### Обновить пункт чек-листа
 
 ```http
