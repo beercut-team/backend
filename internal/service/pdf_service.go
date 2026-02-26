@@ -38,12 +38,15 @@ func (s *pdfService) GenerateRoutingSheet(ctx context.Context, patientID uint) (
 	pdf := fpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
 
-	// Use built-in font (Cyrillic support would require adding a TTF font)
-	pdf.SetFont("Helvetica", "B", 16)
+	// Add UTF-8 fonts with Cyrillic support
+	pdf.AddUTF8Font("DejaVuSans", "", "assets/fonts/DejaVuSans.ttf")
+	pdf.AddUTF8Font("DejaVuSans", "B", "assets/fonts/DejaVuSans-Bold.ttf")
+
+	pdf.SetFont("DejaVuSans", "B", 16)
 	pdf.Cell(190, 10, "Routing Sheet / Marshrut list")
 	pdf.Ln(15)
 
-	pdf.SetFont("Helvetica", "", 11)
+	pdf.SetFont("DejaVuSans", "", 11)
 	pdf.Cell(190, 7, fmt.Sprintf("Patient: %s %s %s", patient.LastName, patient.FirstName, patient.MiddleName))
 	pdf.Ln(7)
 	pdf.Cell(190, 7, fmt.Sprintf("Access Code: %s", patient.AccessCode))
@@ -58,18 +61,18 @@ func (s *pdfService) GenerateRoutingSheet(ctx context.Context, patientID uint) (
 	pdf.Ln(12)
 
 	// Checklist summary
-	pdf.SetFont("Helvetica", "B", 13)
+	pdf.SetFont("DejaVuSans", "B", 13)
 	pdf.Cell(190, 10, "Checklist Items")
 	pdf.Ln(10)
 
-	pdf.SetFont("Helvetica", "B", 9)
+	pdf.SetFont("DejaVuSans", "B", 9)
 	pdf.CellFormat(80, 7, "Item", "1", 0, "", false, 0, "")
 	pdf.CellFormat(30, 7, "Category", "1", 0, "", false, 0, "")
 	pdf.CellFormat(25, 7, "Required", "1", 0, "", false, 0, "")
 	pdf.CellFormat(25, 7, "Status", "1", 0, "", false, 0, "")
 	pdf.CellFormat(30, 7, "Expires", "1", 1, "", false, 0, "")
 
-	pdf.SetFont("Helvetica", "", 8)
+	pdf.SetFont("DejaVuSans", "", 8)
 	for _, item := range items {
 		required := "No"
 		if item.IsRequired {
@@ -107,18 +110,22 @@ func (s *pdfService) GenerateChecklistReport(ctx context.Context, patientID uint
 	pdf := fpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
 
-	pdf.SetFont("Helvetica", "B", 16)
+	// Add UTF-8 fonts with Cyrillic support
+	pdf.AddUTF8Font("DejaVuSans", "", "assets/fonts/DejaVuSans.ttf")
+	pdf.AddUTF8Font("DejaVuSans", "B", "assets/fonts/DejaVuSans-Bold.ttf")
+
+	pdf.SetFont("DejaVuSans", "B", 16)
 	pdf.Cell(190, 10, "Checklist Report")
 	pdf.Ln(15)
 
-	pdf.SetFont("Helvetica", "", 11)
+	pdf.SetFont("DejaVuSans", "", 11)
 	pdf.Cell(190, 7, fmt.Sprintf("Patient: %s %s %s", patient.LastName, patient.FirstName, patient.MiddleName))
 	pdf.Ln(7)
 	pdf.Cell(190, 7, fmt.Sprintf("Operation: %s (%s)", patient.OperationType, patient.Eye))
 	pdf.Ln(12)
 
 	for _, item := range items {
-		pdf.SetFont("Helvetica", "B", 10)
+		pdf.SetFont("DejaVuSans", "B", 10)
 		statusIcon := "[ ]"
 		if item.Status == domain.ChecklistStatusCompleted {
 			statusIcon = "[X]"
@@ -130,7 +137,7 @@ func (s *pdfService) GenerateChecklistReport(ctx context.Context, patientID uint
 		pdf.Cell(190, 7, fmt.Sprintf("%s %s", statusIcon, item.Name))
 		pdf.Ln(7)
 
-		pdf.SetFont("Helvetica", "", 9)
+		pdf.SetFont("DejaVuSans", "", 9)
 		if item.Description != "" {
 			pdf.Cell(190, 5, fmt.Sprintf("   Description: %s", item.Description))
 			pdf.Ln(5)
