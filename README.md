@@ -189,6 +189,8 @@ backend/
 - `PUT /api/v1/checklists/:id/review` — Проверить пункт (хирург)
 - `GET /api/v1/checklists/patient/:patientId/progress` — Прогресс выполнения
 
+**Автоматический переход статуса**: При выполнении всех обязательных пунктов чек-листа статус пациента автоматически меняется с `IN_PROGRESS` на `PENDING_REVIEW`.
+
 ### Медиафайлы
 - `POST /api/v1/media/upload` — Загрузить файл
 - `GET /api/v1/media/patient/:patientId` — Файлы пациента

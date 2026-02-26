@@ -308,6 +308,37 @@ async function markChecklistItemCompleted(itemId, result, notes) {
 }
 ```
 
+**⚠️ ВАЖНО: Автоматический переход статуса**
+
+При обновлении пунктов чек-листа система автоматически проверяет выполнение всех **обязательных** пунктов:
+
+- Когда все обязательные пункты (`is_required: true`) отмечены как `COMPLETED`, статус пациента **автоматически** меняется с `IN_PROGRESS` на `PENDING_REVIEW`
+- Опциональные пункты (`is_required: false`) **не влияют** на автопереход
+- Автопереход происходит сразу после обновления любого пункта чек-листа
+- Создается запись в истории статусов с комментарием "Все обязательные пункты чек-листа выполнены"
+- Отправляются уведомления хирургам о необходимости проверки
+
+**Пример для UI:**
+```javascript
+// После обновления пункта чек-листа, проверьте статус пациента
+async function updateChecklistAndRefresh(itemId, data) {
+  // Обновить пункт
+  await markChecklistItemCompleted(itemId, data.result, data.notes);
+
+  // Перезагрузить данные пациента, т.к. статус мог измениться
+  const patientResponse = await fetchWithAuth(`http://localhost:8080/api/v1/patients/${patientId}`);
+  const { data: updatedPatient } = await patientResponse.json();
+
+  // Проверить, изменился ли статус
+  if (updatedPatient.status === 'PENDING_REVIEW') {
+    // Показать уведомление пользователю
+    showNotification('Все обязательные пункты выполнены! Пациент отправлен на проверку хирургу.');
+  }
+
+  return updatedPatient;
+}
+```
+
 **Создание комментариев:**
 ```javascript
 // Пациент может задавать вопросы врачу
