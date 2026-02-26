@@ -53,6 +53,12 @@ type Patient struct {
 	District       *District     `gorm:"foreignKey:DistrictID" json:"district,omitempty"`
 	Notes          string        `gorm:"type:text" json:"notes"`
 	SurgeryDate    *time.Time    `json:"surgery_date"`
+
+	// Medical standards and integrations
+	MedicalMetadata *MedicalStandardsMetadata `gorm:"type:jsonb" json:"medical_metadata,omitempty"`
+	OMSPolicy       string                    `gorm:"type:varchar(16)" json:"oms_policy,omitempty"`
+	Gender          string                    `gorm:"type:varchar(10)" json:"gender,omitempty"` // male, female
+
 	CreatedAt      time.Time     `json:"created_at"`
 	UpdatedAt      time.Time     `json:"updated_at"`
 }

@@ -76,6 +76,8 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	notifService := service.NewNotificationService(notifRepo)
 	pdfService := service.NewPDFService(patientRepo, checklistRepo)
 	syncService := service.NewSyncService(syncRepo)
+	medicalStandardsService := service.NewMedicalStandardsService(patientRepo)
+	integrationsService := service.NewIntegrationsService(patientRepo)
 
 	// --- Scheduler ---
 	scheduler := service.NewSchedulerService(checklistRepo, surgeryRepo, notifRepo, mediaRepo)
@@ -94,6 +96,8 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	printHandler := handler.NewPrintHandler(pdfService)
 	syncHandler := handler.NewSyncHandler(syncService)
 	adminHandler := handler.NewAdminHandler(authService, db)
+	medicalStandardsHandler := handler.NewMedicalStandardsHandler(medicalStandardsService)
+	integrationsHandler := handler.NewIntegrationsHandler(integrationsService)
 
 	// --- Serve OpenAPI docs ---
 	r.StaticFile("/openapi.json", "./openapi.json")
@@ -179,6 +183,15 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 				patients.POST("/:id/status", patientHandler.ChangeStatus)
 				patients.POST("/:id/batch-update", patientHandler.BatchUpdate)
 				patients.POST("/:id/regenerate-code", middleware.RequireRole(domain.RoleAdmin), patientHandler.RegenerateAccessCode)
+				patients.POST("/:id/medical-metadata", medicalStandardsHandler.UpdateMedicalMetadata)
+			}
+
+			// Medical codes search
+			medicalCodes := protected.Group("/medical-codes")
+			{
+				medicalCodes.GET("/icd10/search", medicalStandardsHandler.SearchICD10Codes)
+				medicalCodes.GET("/snomed/search", medicalStandardsHandler.SearchSNOMEDCodes)
+				medicalCodes.GET("/loinc/search", medicalStandardsHandler.SearchLOINCCodes)
 			}
 
 			// Checklists
@@ -248,6 +261,26 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 			{
 				sync.POST("/push", syncHandler.Push)
 				sync.GET("/pull", syncHandler.Pull)
+			}
+
+			// Integrations
+			integrations := protected.Group("/integrations")
+			{
+				// EMIAS
+				emias := integrations.Group("/emias/patients")
+				{
+					emias.POST("/:id/export", integrationsHandler.ExportToEMIAS)
+					emias.POST("/:id/case", integrationsHandler.CreateEMIASCase)
+					emias.GET("/:id/status", integrationsHandler.GetEMIASStatus)
+				}
+
+				// RIAMS
+				riams := integrations.Group("/riams")
+				{
+					riams.POST("/patients/:id/export", integrationsHandler.ExportToRIAMS)
+					riams.GET("/patients/:id/status", integrationsHandler.GetRIAMSStatus)
+					riams.GET("/regions", integrationsHandler.GetRIAMSRegions)
+				}
 			}
 
 			// Admin
