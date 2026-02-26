@@ -71,7 +71,17 @@ Each patient receives a unique 8-character hex access code upon creation. This c
 **Commands**:
 - `/start <access_code>` — bind patient to Telegram chat
 - `/status` — check current preparation status
+- `/login` — get one-time login link for patient portal
 - Automatic notifications on status changes
+
+**Patient Authentication Flow**:
+1. **Direct login**: `POST /api/v1/auth/patient-login` with `{"access_code": "a1b2c3d4"}`
+2. **Telegram login**:
+   - Patient uses `/login` command in Telegram bot
+   - Bot generates one-time token (valid 15 min)
+   - Patient clicks link: `/patient/portal?token=<token>`
+   - Frontend calls `POST /api/v1/auth/telegram-token-login` with token
+   - Returns JWT tokens for authenticated access
 
 ### Admin Features
 - Access code displayed prominently in patient card
@@ -84,10 +94,14 @@ Each patient receives a unique 8-character hex access code upon creation. This c
 
 ## Public Endpoints (No Auth)
 - `POST /api/v1/auth/register` — user registration
-- `POST /api/v1/auth/login` — user login
+- `POST /api/v1/auth/login` — user login (email + password)
+- `POST /api/v1/auth/patient-login` — patient login by access code (returns JWT tokens)
+- `POST /api/v1/auth/telegram-token-login` — patient login via Telegram one-time token
 - `POST /api/v1/auth/refresh` — refresh access token
-- `GET /api/v1/patients/public/:accessCode` — patient status by code
+- `GET /api/v1/patients/public/:accessCode` — patient status by code (no auth)
 - `GET /patient` — patient web interface
+- `GET /patient/login` — patient login page
+- `GET /patient/portal` — patient portal (requires auth)
 - `GET /admin` — admin panel UI
 - `GET /docs` — API documentation (Scalar)
 

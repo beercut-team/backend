@@ -55,7 +55,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	}
 
 	// --- Telegram Bot (создаём рано, чтобы передать в сервисы) ---
-	bot, err := telegram.NewBot(cfg.TelegramBotToken, patientRepo, telegramRepo, telegramTokenRepo, userRepo)
+	bot, err := telegram.NewBot(cfg.TelegramBotToken, cfg.BaseURL, patientRepo, telegramRepo, telegramTokenRepo, userRepo)
 	if err != nil {
 		log.Warn().Err(err).Msg("Telegram bot failed to start")
 	}

@@ -192,6 +192,88 @@
         }
       }
     },
+    "/api/v1/auth/patient-login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Вход пациента по коду доступа",
+        "description": "Публичный endpoint для входа пациента используя 8-значный код доступа. Возвращает JWT токены для доступа к защищённым endpoints.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatientLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Вход выполнен успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неверный код доступа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/telegram-token-login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Вход через одноразовый токен из Telegram",
+        "description": "Публичный endpoint для входа пациента используя одноразовый токен, полученный через Telegram бот командой /login. Токен действителен 15 минут и может быть использован только один раз.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelegramTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Вход выполнен успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Недействительный или истёкший токен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/me": {
       "get": {
         "tags": [
@@ -1812,6 +1894,32 @@
         "properties": {
           "refresh_token": {
             "type": "string"
+          }
+        }
+      },
+      "PatientLoginRequest": {
+        "type": "object",
+        "required": [
+          "access_code"
+        ],
+        "properties": {
+          "access_code": {
+            "type": "string",
+            "description": "8-значный hex код доступа пациента",
+            "example": "a1b2c3d4"
+          }
+        }
+      },
+      "TelegramTokenRequest": {
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Одноразовый токен из Telegram бота (32 символа, действителен 15 минут)",
+            "example": "1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p"
           }
         }
       },

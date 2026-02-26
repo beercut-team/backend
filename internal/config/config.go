@@ -34,6 +34,9 @@ type Config struct {
 	// Telegram
 	TelegramBotToken string `mapstructure:"TELEGRAM_BOT_TOKEN"`
 
+	// Base URL for frontend links (used in Telegram bot, emails, etc.)
+	BaseURL string `mapstructure:"BASE_URL"`
+
 	// Storage mode: "minio" or "local"
 	StorageMode string `mapstructure:"STORAGE_MODE"`
 	LocalUploadPath string `mapstructure:"LOCAL_UPLOAD_PATH"`
@@ -59,6 +62,7 @@ func Load() (*Config, error) {
 	viper.SetDefault("MINIO_USE_SSL", false)
 	viper.SetDefault("STORAGE_MODE", "local")
 	viper.SetDefault("LOCAL_UPLOAD_PATH", "./uploads")
+	viper.SetDefault("BASE_URL", "http://localhost:8080")
 
 	cfg := &Config{
 		AppPort:             viper.GetString("APP_PORT"),
@@ -82,6 +86,7 @@ func Load() (*Config, error) {
 		MinIOBucket:         viper.GetString("MINIO_BUCKET"),
 		MinIOUseSSL:         viper.GetBool("MINIO_USE_SSL"),
 		TelegramBotToken:    viper.GetString("TELEGRAM_BOT_TOKEN"),
+		BaseURL:             viper.GetString("BASE_URL"),
 		StorageMode:         viper.GetString("STORAGE_MODE"),
 		LocalUploadPath:     viper.GetString("LOCAL_UPLOAD_PATH"),
 	}

@@ -20,9 +20,10 @@ type Bot struct {
 	telegramRepo repository.TelegramRepository
 	tokenRepo    repository.TelegramTokenRepository
 	userRepo     repository.UserRepository
+	baseURL      string
 }
 
-func NewBot(token string, patientRepo repository.PatientRepository, telegramRepo repository.TelegramRepository, tokenRepo repository.TelegramTokenRepository, userRepo repository.UserRepository) (*Bot, error) {
+func NewBot(token string, baseURL string, patientRepo repository.PatientRepository, telegramRepo repository.TelegramRepository, tokenRepo repository.TelegramTokenRepository, userRepo repository.UserRepository) (*Bot, error) {
 	if token == "" {
 		return nil, nil
 	}
@@ -34,12 +35,17 @@ func NewBot(token string, patientRepo repository.PatientRepository, telegramRepo
 
 	log.Info().Str("bot", api.Self.UserName).Msg("Telegram бот авторизован")
 
+	if baseURL == "" {
+		baseURL = "http://localhost:8080"
+	}
+
 	return &Bot{
 		api:          api,
 		patientRepo:  patientRepo,
 		telegramRepo: telegramRepo,
 		tokenRepo:    tokenRepo,
 		userRepo:     userRepo,
+		baseURL:      baseURL,
 	}, nil
 }
 
@@ -247,7 +253,7 @@ func (b *Bot) handleLogin(ctx context.Context, msg *tgbotapi.Message) {
 	}
 
 	// Send login link
-	loginURL := fmt.Sprintf("https://beercut.tech/patient/portal?token=%s", token)
+	loginURL := fmt.Sprintf("%s/patient/portal?token=%s", b.baseURL, token)
 	message := fmt.Sprintf(
 		"🔐 Вход в личный кабинет\n\nПациент: %s %s\n\n"+
 			"Нажмите на ссылку ниже для входа:\n%s\n\n"+
