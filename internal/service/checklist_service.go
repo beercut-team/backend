@@ -52,7 +52,7 @@ func (s *checklistService) GetByPatient(ctx context.Context, patientID uint) ([]
 
 func (s *checklistService) CreateItem(ctx context.Context, req domain.CreateChecklistItemRequest, userID uint) (*domain.ChecklistItem, error) {
 	// Verify patient exists
-	_, err := s.patientRepo.FindByID(ctx, req.PatientID)
+	patient, err := s.patientRepo.FindByID(ctx, req.PatientID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("пациент не найден")
@@ -79,6 +79,36 @@ func (s *checklistService) CreateItem(ctx context.Context, req domain.CreateChec
 		return nil, errors.New("не удалось создать пункт чек-листа")
 	}
 
+	// Создать уведомление в БД для врача
+	if s.notifRepo != nil {
+		patientName := patient.LastName + " " + patient.FirstName
+		notifBody := fmt.Sprintf("Пациент %s: добавлен пункт чек-листа \"%s\"", patientName, item.Name)
+		if item.IsRequired {
+			notifBody += " (обязательный)"
+		}
+
+		s.notifRepo.Create(ctx, &domain.Notification{
+			UserID:     patient.DoctorID,
+			Type:       domain.NotifStatusChange,
+			Title:      "Новый пункт чек-листа",
+			Body:       notifBody,
+			EntityType: "checklist_item",
+			EntityID:   item.ID,
+		})
+
+		// Уведомить хирурга, если назначен
+		if patient.SurgeonID != nil {
+			s.notifRepo.Create(ctx, &domain.Notification{
+				UserID:     *patient.SurgeonID,
+				Type:       domain.NotifStatusChange,
+				Title:      "Новый пункт чек-листа",
+				Body:       notifBody,
+				EntityType: "checklist_item",
+				EntityID:   item.ID,
+			})
+		}
+	}
+
 	// Отправить уведомление пациенту через Telegram
 	if s.bot != nil {
 		message := fmt.Sprintf("📋 Добавлен новый пункт в чек-лист\n\n%s", item.Name)
@@ -89,7 +119,9 @@ func (s *checklistService) CreateItem(ctx context.Context, req domain.CreateChec
 			message += "\n\n⚠️ Обязательный пункт"
 		}
 		s.bot.NotifyPatient(ctx, req.PatientID, message)
-		log.Info().Uint("patient_id", req.PatientID).Str("item_name", item.Name).Msg("уведомление пациенту о новом пункте чек-листа отправлено")
+		log.Info().Uint("patient_id", req.PatientID).Str("item_name", item.Name).Msg("попытка отправки уведомления о новом пункте чек-листа")
+	} else {
+		log.Debug().Uint("patient_id", req.PatientID).Msg("уведомление пациенту пропущено: Telegram бот не инициализирован")
 	}
 
 	return item, nil
@@ -128,26 +160,64 @@ func (s *checklistService) UpdateItem(ctx context.Context, id uint, req domain.U
 		return nil, errors.New("не удалось обновить элемент чек-листа")
 	}
 
-	// Отправить уведомление пациенту при изменении статуса
-	if statusChanged && s.bot != nil {
-		var message string
-		switch item.Status {
-		case domain.ChecklistStatusCompleted:
-			message = fmt.Sprintf("✅ Пункт чек-листа выполнен\n\n%s", item.Name)
+	// Создать уведомление в БД для врача при изменении статуса
+	if statusChanged && s.notifRepo != nil {
+		patient, err := s.patientRepo.FindByID(ctx, item.PatientID)
+		if err == nil {
+			patientName := patient.LastName + " " + patient.FirstName
+			statusName := string(item.Status)
+			notifBody := fmt.Sprintf("Пациент %s: пункт чек-листа \"%s\" изменён на %s", patientName, item.Name, statusName)
 			if item.Result != "" {
-				message += fmt.Sprintf("\n\nРезультат: %s", item.Result)
+				notifBody += fmt.Sprintf(" (результат: %s)", item.Result)
 			}
-		case domain.ChecklistStatusInProgress:
-			message = fmt.Sprintf("⏳ Пункт чек-листа в работе\n\n%s", item.Name)
-		case domain.ChecklistStatusRejected:
-			message = fmt.Sprintf("❌ Пункт чек-листа отклонён\n\n%s", item.Name)
-			if item.Notes != "" {
-				message += fmt.Sprintf("\n\nПримечание: %s", item.Notes)
+
+			s.notifRepo.Create(ctx, &domain.Notification{
+				UserID:     patient.DoctorID,
+				Type:       domain.NotifStatusChange,
+				Title:      "Обновление чек-листа",
+				Body:       notifBody,
+				EntityType: "checklist_item",
+				EntityID:   item.ID,
+			})
+
+			// Уведомить хирурга, если назначен
+			if patient.SurgeonID != nil {
+				s.notifRepo.Create(ctx, &domain.Notification{
+					UserID:     *patient.SurgeonID,
+					Type:       domain.NotifStatusChange,
+					Title:      "Обновление чек-листа",
+					Body:       notifBody,
+					EntityType: "checklist_item",
+					EntityID:   item.ID,
+				})
 			}
 		}
-		if message != "" {
-			s.bot.NotifyPatient(ctx, item.PatientID, message)
-			log.Info().Uint("patient_id", item.PatientID).Str("item_name", item.Name).Str("status", string(item.Status)).Msg("уведомление пациенту об обновлении чек-листа отправлено")
+	}
+
+	// Отправить уведомление пациенту при изменении статуса
+	if statusChanged {
+		if s.bot != nil {
+			var message string
+			switch item.Status {
+			case domain.ChecklistStatusCompleted:
+				message = fmt.Sprintf("✅ Пункт чек-листа выполнен\n\n%s", item.Name)
+				if item.Result != "" {
+					message += fmt.Sprintf("\n\nРезультат: %s", item.Result)
+				}
+			case domain.ChecklistStatusInProgress:
+				message = fmt.Sprintf("⏳ Пункт чек-листа в работе\n\n%s", item.Name)
+			case domain.ChecklistStatusRejected:
+				message = fmt.Sprintf("❌ Пункт чек-листа отклонён\n\n%s", item.Name)
+				if item.Notes != "" {
+					message += fmt.Sprintf("\n\nПримечание: %s", item.Notes)
+				}
+			}
+			if message != "" {
+				s.bot.NotifyPatient(ctx, item.PatientID, message)
+				log.Info().Uint("patient_id", item.PatientID).Str("item_name", item.Name).Str("status", string(item.Status)).Msg("попытка отправки уведомления об обновлении чек-листа")
+			}
+		} else {
+			log.Debug().Uint("patient_id", item.PatientID).Msg("уведомление пациенту пропущено: Telegram бот не инициализирован")
 		}
 	}
 
@@ -184,6 +254,37 @@ func (s *checklistService) ReviewItem(ctx context.Context, id uint, req domain.R
 		return nil, errors.New("не удалось проверить элемент чек-листа")
 	}
 
+	// Создать уведомление в БД для врача о результате проверки
+	if s.notifRepo != nil {
+		patient, err := s.patientRepo.FindByID(ctx, item.PatientID)
+		if err == nil {
+			patientName := patient.LastName + " " + patient.FirstName
+			var notifTitle, notifBody string
+
+			if status == domain.ChecklistStatusCompleted {
+				notifTitle = "Пункт чек-листа одобрен"
+				notifBody = fmt.Sprintf("Пациент %s: хирург одобрил пункт \"%s\"", patientName, item.Name)
+			} else {
+				notifTitle = "Пункт чек-листа отклонён"
+				notifBody = fmt.Sprintf("Пациент %s: хирург отклонил пункт \"%s\"", patientName, item.Name)
+			}
+
+			if req.ReviewNote != "" {
+				notifBody += fmt.Sprintf(" (комментарий: %s)", req.ReviewNote)
+			}
+
+			// Уведомить лечащего врача
+			s.notifRepo.Create(ctx, &domain.Notification{
+				UserID:     patient.DoctorID,
+				Type:       domain.NotifStatusChange,
+				Title:      notifTitle,
+				Body:       notifBody,
+				EntityType: "checklist_item",
+				EntityID:   item.ID,
+			})
+		}
+	}
+
 	// Отправить уведомление пациенту о результате проверки
 	if s.bot != nil {
 		var message string
@@ -201,8 +302,10 @@ func (s *checklistService) ReviewItem(ctx context.Context, id uint, req domain.R
 		}
 		if message != "" {
 			s.bot.NotifyPatient(ctx, item.PatientID, message)
-			log.Info().Uint("patient_id", item.PatientID).Str("item_name", item.Name).Str("review_status", string(status)).Msg("уведомление пациенту о проверке чек-листа отправлено")
+			log.Info().Uint("patient_id", item.PatientID).Str("item_name", item.Name).Str("review_status", string(status)).Msg("попытка отправки уведомления о проверке чек-листа")
 		}
+	} else {
+		log.Debug().Uint("patient_id", item.PatientID).Msg("уведомление пациенту пропущено: Telegram бот не инициализирован")
 	}
 
 	s.CheckAndTransition(ctx, item.PatientID)

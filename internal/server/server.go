@@ -60,6 +60,8 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	}
 	if bot != nil {
 		bot.Start()
+	} else {
+		log.Warn().Msg("Telegram бот не инициализирован (пустой токен). Уведомления пациентам отправляться не будут")
 	}
 
 	// --- Services ---

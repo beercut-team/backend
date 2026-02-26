@@ -92,6 +92,9 @@ func (s *patientService) Create(ctx context.Context, req domain.CreatePatientReq
 	if s.bot != nil {
 		patientName := patient.FirstName + " " + patient.LastName
 		s.bot.NotifyDoctorNewPatient(ctx, doctorID, patientName)
+		log.Info().Uint("doctor_id", doctorID).Uint("patient_id", patient.ID).Msg("попытка уведомления врача о новом пациенте")
+	} else {
+		log.Warn().Uint("doctor_id", doctorID).Uint("patient_id", patient.ID).Msg("Telegram бот не настроен, уведомление врачу не отправлено")
 	}
 
 	patient.PopulateDisplayNames()
@@ -337,11 +340,15 @@ func (s *patientService) ChangeStatus(ctx context.Context, id uint, req domain.P
 	// Отправить уведомление пациенту через Telegram
 	if s.bot != nil {
 		s.bot.NotifyPatientStatusChange(ctx, id, string(req.Status))
+		log.Info().Uint("patient_id", id).Str("status", string(req.Status)).Msg("попытка уведомления пациента об изменении статуса")
 
 		// Если статус изменился на PENDING_REVIEW, уведомить хирургов
 		if req.Status == domain.PatientStatusPendingReview {
 			s.bot.NotifySurgeonReviewNeeded(ctx, id)
+			log.Info().Uint("patient_id", id).Msg("попытка уведомления хирургов о необходимости проверки")
 		}
+	} else {
+		log.Warn().Uint("patient_id", id).Str("status", string(req.Status)).Msg("Telegram бот не настроен, уведомления не отправлены")
 	}
 
 	log.Info().Uint("patient_id", id).Str("from", string(oldStatus)).Str("to", string(req.Status)).Msg("статус успешно изменён")
@@ -379,6 +386,9 @@ func (s *patientService) RegenerateAccessCode(ctx context.Context, id uint) (*do
 	// Уведомить пациента о новом коде через Telegram
 	if s.bot != nil {
 		s.bot.NotifyPatientNewAccessCode(ctx, id, newCode)
+		log.Info().Uint("patient_id", id).Str("new_code", newCode).Msg("попытка уведомления пациента о новом коде доступа")
+	} else {
+		log.Warn().Uint("patient_id", id).Msg("Telegram бот не настроен, уведомление о новом коде не отправлено")
 	}
 
 	p.PopulateDisplayNames()
@@ -592,10 +602,16 @@ func (s *patientService) BatchUpdate(ctx context.Context, id uint, req domain.Ba
 		}
 	}
 
-	if req.Status != nil && s.bot != nil {
-		s.bot.NotifyPatientStatusChange(ctx, id, string(req.Status.Status))
-		if req.Status.Status == domain.PatientStatusPendingReview {
-			s.bot.NotifySurgeonReviewNeeded(ctx, id)
+	if req.Status != nil {
+		if s.bot != nil {
+			s.bot.NotifyPatientStatusChange(ctx, id, string(req.Status.Status))
+			log.Info().Uint("patient_id", id).Str("status", string(req.Status.Status)).Msg("попытка уведомления пациента об изменении статуса (batch)")
+			if req.Status.Status == domain.PatientStatusPendingReview {
+				s.bot.NotifySurgeonReviewNeeded(ctx, id)
+				log.Info().Uint("patient_id", id).Msg("попытка уведомления хирургов о необходимости проверки (batch)")
+			}
+		} else {
+			log.Warn().Uint("patient_id", id).Str("status", string(req.Status.Status)).Msg("Telegram бот не настроен, уведомления не отправлены (batch)")
 		}
 	}
 
