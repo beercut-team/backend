@@ -130,6 +130,30 @@ func GetStatusDisplayName(status PatientStatus) string {
 	return string(status)
 }
 
+func GetOperationTypeDisplayName(opType OperationType) string {
+	names := map[OperationType]string{
+		OperationPhacoemulsification: "Факоэмульсификация катаракты",
+		OperationAntiglaucoma:        "Антиглаукомная операция",
+		OperationVitrectomy:          "Витрэктомия",
+	}
+	if name, ok := names[opType]; ok {
+		return name
+	}
+	return string(opType)
+}
+
+func GetEyeDisplayName(eye string) string {
+	names := map[string]string{
+		"OD": "Правый глаз",
+		"OS": "Левый глаз",
+		"OU": "Оба глаза",
+	}
+	if name, ok := names[eye]; ok {
+		return name
+	}
+	return eye
+}
+
 // --- Requests ---
 
 type CreatePatientRequest struct {

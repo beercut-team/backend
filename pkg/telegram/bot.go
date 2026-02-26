@@ -177,11 +177,13 @@ func (b *Bot) handleStatus(ctx context.Context, msg *tgbotapi.Message) {
 
 	// Use human-readable status name
 	statusName := domain.GetStatusDisplayName(patient.Status)
+	operationName := domain.GetOperationTypeDisplayName(patient.OperationType)
+	eyeName := domain.GetEyeDisplayName(patient.Eye)
 
 	statusText := fmt.Sprintf(
 		"📋 Информация о пациенте\n\nПациент: %s %s\nСтатус: %s\nОперация: %s (%s)",
 		patient.FirstName, patient.LastName,
-		statusName, patient.OperationType, patient.Eye,
+		statusName, operationName, eyeName,
 	)
 
 	if patient.SurgeryDate != nil {
@@ -380,8 +382,11 @@ func (b *Bot) NotifyPatientStatusChange(ctx context.Context, patientID uint, new
 		emoji = "🔔"
 	}
 
+	operationName := domain.GetOperationTypeDisplayName(patient.OperationType)
+	eyeName := domain.GetEyeDisplayName(patient.Eye)
+
 	message := fmt.Sprintf("%s Статус изменён\n\n%s\n\nПациент: %s %s\nОперация: %s (%s)",
-		emoji, statusName, patient.FirstName, patient.LastName, patient.OperationType, patient.Eye)
+		emoji, statusName, patient.FirstName, patient.LastName, operationName, eyeName)
 
 	if patient.SurgeryDate != nil {
 		message += fmt.Sprintf("\n\n📅 Дата операции: %s", patient.SurgeryDate.Format("02.01.2006"))
@@ -429,8 +434,11 @@ func (b *Bot) NotifySurgeonReviewNeeded(ctx context.Context, patientID uint) {
 		districtName = patient.District.Name
 	}
 
+	operationName := domain.GetOperationTypeDisplayName(patient.OperationType)
+	eyeName := domain.GetEyeDisplayName(patient.Eye)
+
 	message := fmt.Sprintf("🔍 Требуется проверка\n\nПациент: %s %s\nОперация: %s (%s)\nРайон: %s\n\nИспользуйте веб-интерфейс для проверки документов.",
-		patient.FirstName, patient.LastName, patient.OperationType, patient.Eye, districtName)
+		patient.FirstName, patient.LastName, operationName, eyeName, districtName)
 
 	sentCount := 0
 	for _, surgeon := range surgeons {
