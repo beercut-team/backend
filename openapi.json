@@ -2154,6 +2154,7 @@
             "enum": [
               "DISTRICT_DOCTOR",
               "SURGEON",
+              "CALL_CENTER",
               "PATIENT",
               "ADMIN"
             ],
@@ -2257,6 +2258,7 @@
             "enum": [
               "DISTRICT_DOCTOR",
               "SURGEON",
+              "CALL_CENTER",
               "PATIENT",
               "ADMIN"
             ]
