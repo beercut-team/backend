@@ -4,7 +4,7 @@
 
 ## Описание проекта
 
-Система предназначена для управления процессом подготовки пациентов к офтальмологическим операциям. Включает управление пациентами, чек-листами обследований, расчёт ИОЛ, планирование операций и уведомления через Telegram.
+Система предназначена для управления процессом подготовки пациентов к офтальмологическим операциям. Включает управление пациентами, чек-листами обследований, расчёт ИОЛ, планирование операций, уведомления через Telegram, поддержку медицинских стандартов (ICD-10, SNOMED-CT, LOINC) и интеграции с внешними системами (ЕМИАС, РИАМС).
 
 ## Технологический стек
 
@@ -40,6 +40,9 @@ domain → repository → service → handler
 - **SURGEON** — просмотр чек-листов, планирование операций
 - **DISTRICT_DOCTOR** — создание и управление пациентами в своём районе
 - **PATIENT** — ограниченный доступ к своим данным
+- **CALL_CENTER** — управление пациентами и координация
+
+**Важно**: При регистрации все пользователи должны указать `district_id` (ID района).
 
 ## Установка и запуск
 
@@ -229,6 +232,20 @@ backend/
 - `POST /api/v1/sync/push` — Отправить изменения
 - `GET /api/v1/sync/pull?since=<timestamp>` — Получить изменения
 
+### Медицинские стандарты
+- `GET /api/v1/medical-codes/icd10/search?q=<query>` — Поиск кодов диагнозов ICD-10
+- `GET /api/v1/medical-codes/snomed/search?q=<query>` — Поиск кодов процедур SNOMED-CT
+- `GET /api/v1/medical-codes/loinc/search?q=<query>` — Поиск кодов наблюдений LOINC
+- `POST /api/v1/patients/:id/medical-metadata` — Обновить медицинские метаданные пациента
+
+### Интеграции с внешними системами
+- `POST /api/v1/integrations/emias/patients/:id/export` — Экспорт пациента в ЕМИАС
+- `POST /api/v1/integrations/emias/patients/:id/case` — Создать случай в ЕМИАС
+- `GET /api/v1/integrations/emias/patients/:id/status` — Статус синхронизации с ЕМИАС
+- `POST /api/v1/integrations/riams/patients/:id/export` — Экспорт пациента в РИАМС
+- `GET /api/v1/integrations/riams/patients/:id/status` — Статус синхронизации с РИАМС
+- `GET /api/v1/integrations/riams/regions` — Список поддерживаемых регионов РИАМС
+
 ### Администрирование
 - `GET /api/v1/admin/users` — Список пользователей
 - `GET /api/v1/admin/stats` — Общая статистика системы
@@ -270,6 +287,13 @@ backend/
 | `TELEGRAM_BOT_TOKEN` | Токен Telegram бота | - |
 
 ## Разработка
+
+### Документация
+
+- **[FRONTEND_INTEGRATION_GUIDE.md](FRONTEND_INTEGRATION_GUIDE.md)** — Полное руководство по интеграции с API для фронтенд-разработчиков
+- **[STATUS_TRANSITIONS.md](STATUS_TRANSITIONS.md)** — Карта переходов статусов пациентов с визуальными диаграммами
+- **[API Documentation](http://localhost:8080/docs)** — Интерактивная документация API (Scalar)
+- **[OpenAPI Spec](http://localhost:8080/openapi.json)** — OpenAPI 3.0 спецификация
 
 ### Добавление нового endpoint
 
