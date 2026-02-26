@@ -67,3 +67,19 @@ func (h *NotificationHandler) UnreadCount(c *gin.Context) {
 
 	Success(c, http.StatusOK, gin.H{"count": count})
 }
+
+func (h *NotificationHandler) Create(c *gin.Context) {
+	var req domain.CreateNotificationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		BadRequest(c, err.Error())
+		return
+	}
+
+	notification, err := h.svc.Create(c.Request.Context(), req)
+	if err != nil {
+		Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	Success(c, http.StatusCreated, notification)
+}

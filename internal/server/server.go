@@ -226,6 +226,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 			{
 				notifications.GET("", notifHandler.List)
 				notifications.GET("/unread-count", notifHandler.UnreadCount)
+				notifications.POST("", notifHandler.Create)
 				notifications.POST("/:id/read", notifHandler.MarkAsRead)
 				notifications.POST("/read-all", notifHandler.MarkAllAsRead)
 			}

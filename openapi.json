@@ -1661,6 +1661,93 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Создать уведомление",
+        "description": "Создает новое уведомление для пользователя. Обычно используется системой автоматически, но может быть вызван вручную для тестирования или специальных случаев.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNotificationRequest"
+              },
+              "examples": {
+                "status_change": {
+                  "summary": "Изменение статуса",
+                  "value": {
+                    "user_id": 2,
+                    "type": "STATUS_CHANGE",
+                    "title": "Статус изменен",
+                    "body": "Ваш статус изменен на: Готов к операции",
+                    "entity_type": "patient",
+                    "entity_id": 2
+                  }
+                },
+                "new_comment": {
+                  "summary": "Новый комментарий",
+                  "value": {
+                    "user_id": 2,
+                    "type": "NEW_COMMENT",
+                    "title": "Новый комментарий",
+                    "body": "Врач добавил комментарий к вашей карте",
+                    "entity_type": "comment",
+                    "entity_id": 15
+                  }
+                },
+                "surgery_scheduled": {
+                  "summary": "Операция запланирована",
+                  "value": {
+                    "user_id": 2,
+                    "type": "SURGERY_SCHEDULED",
+                    "title": "Операция запланирована",
+                    "body": "Ваша операция назначена на 11 ноября 2026",
+                    "entity_type": "surgery",
+                    "entity_id": 5
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Уведомление создано",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Notification"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка валидации",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/notifications/unread-count": {
@@ -2963,6 +3050,47 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "CreateNotificationRequest": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "type",
+          "title"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "description": "ID пользователя, которому предназначено уведомление"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "STATUS_CHANGE",
+              "NEW_COMMENT",
+              "SURGERY_SCHEDULED",
+              "CHECKLIST_EXPIRY",
+              "SURGERY_REMINDER"
+            ],
+            "description": "Тип уведомления"
+          },
+          "title": {
+            "type": "string",
+            "description": "Заголовок уведомления"
+          },
+          "body": {
+            "type": "string",
+            "description": "Текст уведомления"
+          },
+          "entity_type": {
+            "type": "string",
+            "description": "Тип связанной сущности (patient, comment, surgery и т.д.)"
+          },
+          "entity_id": {
+            "type": "integer",
+            "description": "ID связанной сущности"
           }
         }
       },
