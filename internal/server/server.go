@@ -198,6 +198,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 			{
 				checklists.GET("/patient/:patientId", checklistHandler.GetByPatient)
 				checklists.GET("/patient/:patientId/progress", checklistHandler.GetProgress)
+				checklists.POST("", middleware.RequireRole(domain.RoleDistrictDoctor, domain.RoleAdmin), checklistHandler.CreateItem)
 				checklists.PATCH("/:id", checklistHandler.UpdateItem)
 				checklists.POST("/:id/review", middleware.RequireRole(domain.RoleSurgeon, domain.RoleAdmin), checklistHandler.ReviewItem)
 			}

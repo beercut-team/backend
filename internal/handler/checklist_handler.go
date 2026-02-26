@@ -34,6 +34,23 @@ func (h *ChecklistHandler) GetByPatient(c *gin.Context) {
 	Success(c, http.StatusOK, items)
 }
 
+func (h *ChecklistHandler) CreateItem(c *gin.Context) {
+	var req domain.CreateChecklistItemRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		BadRequest(c, err.Error())
+		return
+	}
+
+	userID := middleware.GetUserID(c)
+	item, err := h.svc.CreateItem(c.Request.Context(), req, userID)
+	if err != nil {
+		Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	Success(c, http.StatusCreated, item)
+}
+
 func (h *ChecklistHandler) UpdateItem(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {

@@ -12,6 +12,7 @@ import (
 
 type ChecklistService interface {
 	GetByPatient(ctx context.Context, patientID uint) ([]domain.ChecklistItem, error)
+	CreateItem(ctx context.Context, req domain.CreateChecklistItemRequest, userID uint) (*domain.ChecklistItem, error)
 	UpdateItem(ctx context.Context, id uint, req domain.UpdateChecklistItemRequest, userID uint) (*domain.ChecklistItem, error)
 	ReviewItem(ctx context.Context, id uint, req domain.ReviewChecklistItemRequest, reviewerID uint) (*domain.ChecklistItem, error)
 	GetProgress(ctx context.Context, patientID uint) (*ChecklistProgress, error)
@@ -37,6 +38,38 @@ func NewChecklistService(repo repository.ChecklistRepository, patientRepo reposi
 
 func (s *checklistService) GetByPatient(ctx context.Context, patientID uint) ([]domain.ChecklistItem, error) {
 	return s.repo.FindItemsByPatient(ctx, patientID)
+}
+
+func (s *checklistService) CreateItem(ctx context.Context, req domain.CreateChecklistItemRequest, userID uint) (*domain.ChecklistItem, error) {
+	// Verify patient exists
+	_, err := s.patientRepo.FindByID(ctx, req.PatientID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("пациент не найден")
+		}
+		return nil, err
+	}
+
+	item := &domain.ChecklistItem{
+		PatientID:   req.PatientID,
+		Name:        req.Name,
+		Description: req.Description,
+		Category:    req.Category,
+		IsRequired:  req.IsRequired,
+		Status:      domain.ChecklistStatusPending,
+	}
+
+	// Set expiration if provided
+	if req.ExpiresInDays > 0 {
+		exp := time.Now().AddDate(0, 0, req.ExpiresInDays)
+		item.ExpiresAt = &exp
+	}
+
+	if err := s.repo.CreateItem(ctx, item); err != nil {
+		return nil, errors.New("не удалось создать пункт чек-листа")
+	}
+
+	return item, nil
 }
 
 func (s *checklistService) UpdateItem(ctx context.Context, id uint, req domain.UpdateChecklistItemRequest, userID uint) (*domain.ChecklistItem, error) {

@@ -48,6 +48,15 @@ type ChecklistItem struct {
 
 // --- Requests ---
 
+type CreateChecklistItemRequest struct {
+	PatientID     uint   `json:"patient_id" binding:"required"`
+	Name          string `json:"name" binding:"required"`
+	Description   string `json:"description"`
+	Category      string `json:"category"`
+	IsRequired    bool   `json:"is_required"`
+	ExpiresInDays int    `json:"expires_in_days"`
+}
+
 type UpdateChecklistItemRequest struct {
 	Status string  `json:"status"`
 	Result *string `json:"result"`
