@@ -2,8 +2,11 @@ package telegram
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/beercut-team/backend-boilerplate/internal/domain"
 	"github.com/beercut-team/backend-boilerplate/internal/repository"
@@ -15,10 +18,11 @@ type Bot struct {
 	api          *tgbotapi.BotAPI
 	patientRepo  repository.PatientRepository
 	telegramRepo repository.TelegramRepository
+	tokenRepo    repository.TelegramTokenRepository
 	userRepo     repository.UserRepository
 }
 
-func NewBot(token string, patientRepo repository.PatientRepository, telegramRepo repository.TelegramRepository, userRepo repository.UserRepository) (*Bot, error) {
+func NewBot(token string, patientRepo repository.PatientRepository, telegramRepo repository.TelegramRepository, tokenRepo repository.TelegramTokenRepository, userRepo repository.UserRepository) (*Bot, error) {
 	if token == "" {
 		return nil, nil
 	}
@@ -34,6 +38,7 @@ func NewBot(token string, patientRepo repository.PatientRepository, telegramRepo
 		api:          api,
 		patientRepo:  patientRepo,
 		telegramRepo: telegramRepo,
+		tokenRepo:    tokenRepo,
 		userRepo:     userRepo,
 	}, nil
 }
@@ -86,12 +91,15 @@ func (b *Bot) handleMessage(msg *tgbotapi.Message) {
 		b.handleMyPatients(ctx, msg)
 	case text == "/rebind" || text == "/unbind":
 		b.handleRebind(ctx, msg)
+	case text == "/login":
+		b.handleLogin(ctx, msg)
 	case text == "/help":
 		b.sendMessage(msg.Chat.ID, `Доступные команды:
 
 Для пациентов:
 /start <код_доступа> — Привязать к карте пациента
 /status — Проверить статус подготовки
+/login — Получить ссылку для входа в личный кабинет
 /rebind — Отвязать текущего пациента и привязать нового
 
 Для врачей:
@@ -193,6 +201,62 @@ func (b *Bot) handleRebind(ctx context.Context, msg *tgbotapi.Message) {
 	log.Info().Uint("patient_id", existing.PatientID).Int64("chat_id", msg.Chat.ID).Msg("Привязка деактивирована")
 
 	b.sendMessage(msg.Chat.ID, "✅ Привязка отменена.\n\nТеперь используйте /start <код_доступа> для привязки к новому пациенту.")
+}
+
+func (b *Bot) handleLogin(ctx context.Context, msg *tgbotapi.Message) {
+	if b.tokenRepo == nil {
+		b.sendMessage(msg.Chat.ID, "Функция входа недоступна.")
+		return
+	}
+
+	// Check if user has an active binding
+	binding, err := b.telegramRepo.FindByChatID(ctx, msg.Chat.ID)
+	if err != nil {
+		b.sendMessage(msg.Chat.ID, "❌ Вы не привязаны к пациенту.\n\nСначала используйте /start <код_доступа> для привязки.")
+		return
+	}
+
+	// Generate random token (32 characters)
+	tokenBytes := make([]byte, 16)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		log.Error().Err(err).Msg("Не удалось сгенерировать токен")
+		b.sendMessage(msg.Chat.ID, "Произошла ошибка. Попробуйте позже.")
+		return
+	}
+	token := hex.EncodeToString(tokenBytes)
+
+	// Create token record with 15-minute expiration
+	loginToken := &domain.TelegramLoginToken{
+		Token:     token,
+		PatientID: binding.PatientID,
+		Used:      false,
+		ExpiresAt: time.Now().Add(15 * time.Minute),
+	}
+
+	if err := b.tokenRepo.Create(ctx, loginToken); err != nil {
+		log.Error().Err(err).Msg("Не удалось создать токен входа")
+		b.sendMessage(msg.Chat.ID, "Произошла ошибка. Попробуйте позже.")
+		return
+	}
+
+	// Get patient info
+	patient, err := b.patientRepo.FindByID(ctx, binding.PatientID)
+	if err != nil {
+		b.sendMessage(msg.Chat.ID, "Не удалось получить информацию о пациенте.")
+		return
+	}
+
+	// Send login link
+	loginURL := fmt.Sprintf("https://beercut.tech/patient/portal?token=%s", token)
+	message := fmt.Sprintf(
+		"🔐 Вход в личный кабинет\n\nПациент: %s %s\n\n"+
+			"Нажмите на ссылку ниже для входа:\n%s\n\n"+
+			"⚠️ Ссылка действительна 15 минут и может быть использована только один раз.",
+		patient.FirstName, patient.LastName, loginURL,
+	)
+
+	b.sendMessage(msg.Chat.ID, message)
+	log.Info().Uint("patient_id", binding.PatientID).Str("token", token).Msg("Создан токен входа")
 }
 
 func (b *Bot) handleRegisterDoctor(ctx context.Context, msg *tgbotapi.Message) {

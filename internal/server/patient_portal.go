@@ -17,15 +17,55 @@ const API = '/api/v1';
 let accessToken = localStorage.getItem('access_token');
 let user = null;
 
-// Check authentication
-if (!accessToken) {
-    window.location.href = '/patient/login';
+// Check for token in URL (from Telegram bot)
+const urlParams = new URLSearchParams(window.location.search);
+const telegramToken = urlParams.get('token');
+
+if (telegramToken) {
+    // Exchange Telegram token for JWT
+    loginWithTelegramToken(telegramToken);
+} else {
+    // Check authentication
+    if (!accessToken) {
+        window.location.href = '/patient/login';
+    }
+
+    try {
+        user = JSON.parse(localStorage.getItem('user'));
+    } catch (e) {
+        window.location.href = '/patient/login';
+    }
+
+    loadPatientData();
 }
 
-try {
-    user = JSON.parse(localStorage.getItem('user'));
-} catch (e) {
-    window.location.href = '/patient/login';
+async function loginWithTelegramToken(token) {
+    try {
+        const response = await fetch(API + '/auth/telegram-token-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: token })
+        });
+
+        if (!response.ok) {
+            throw new Error('Недействительный или истёкший токен');
+        }
+
+        const data = await response.json();
+
+        // Store tokens
+        localStorage.setItem('access_token', data.access_token);
+        localStorage.setItem('refresh_token', data.refresh_token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+
+        // Remove token from URL and reload
+        window.history.replaceState({}, document.title, '/patient/portal');
+        window.location.reload();
+
+    } catch (err) {
+        alert('Ошибка входа: ' + err.message);
+        window.location.href = '/patient/login';
+    }
 }
 
 async function fetchWithAuth(url, options = {}) {

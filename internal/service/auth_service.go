@@ -14,6 +14,7 @@ type AuthService interface {
 	Register(ctx context.Context, req domain.RegisterRequest) (*domain.AuthResponse, error)
 	Login(ctx context.Context, req domain.LoginRequest) (*domain.AuthResponse, error)
 	PatientLogin(ctx context.Context, req domain.PatientLoginRequest) (*domain.AuthResponse, error)
+	TelegramTokenLogin(ctx context.Context, req domain.TelegramTokenRequest) (*domain.AuthResponse, error)
 	Refresh(ctx context.Context, req domain.RefreshRequest) (*domain.AuthResponse, error)
 	Logout(ctx context.Context, userID uint) error
 	Me(ctx context.Context, userID uint) (*domain.UserResponse, error)
@@ -21,9 +22,10 @@ type AuthService interface {
 }
 
 type authService struct {
-	userRepo     repository.UserRepository
-	patientRepo  repository.PatientRepository
-	tokenService TokenService
+	userRepo       repository.UserRepository
+	patientRepo    repository.PatientRepository
+	tokenRepo      repository.TelegramTokenRepository
+	tokenService   TokenService
 }
 
 func NewAuthService(userRepo repository.UserRepository, tokenService TokenService) AuthService {
@@ -33,10 +35,11 @@ func NewAuthService(userRepo repository.UserRepository, tokenService TokenServic
 	}
 }
 
-func NewAuthServiceWithPatient(userRepo repository.UserRepository, patientRepo repository.PatientRepository, tokenService TokenService) AuthService {
+func NewAuthServiceWithPatient(userRepo repository.UserRepository, patientRepo repository.PatientRepository, tokenRepo repository.TelegramTokenRepository, tokenService TokenService) AuthService {
 	return &authService{
 		userRepo:     userRepo,
 		patientRepo:  patientRepo,
+		tokenRepo:    tokenRepo,
 		tokenService: tokenService,
 	}
 }
@@ -108,6 +111,59 @@ func (s *authService) PatientLogin(ctx context.Context, req domain.PatientLoginR
 	}
 
 	// Generate tokens with patient ID and PATIENT role
+	accessToken, err := s.tokenService.GenerateAccessToken(patient.ID, domain.RolePatient)
+	if err != nil {
+		return nil, errors.New("не удалось сгенерировать токен доступа")
+	}
+
+	refreshToken, err := s.tokenService.GenerateRefreshToken(patient.ID)
+	if err != nil {
+		return nil, errors.New("не удалось сгенерировать токен обновления")
+	}
+
+	// Create virtual user response from patient data
+	userResp := domain.UserResponse{
+		ID:         patient.ID,
+		Email:      patient.Email,
+		Name:       patient.FirstName + " " + patient.LastName,
+		FirstName:  patient.FirstName,
+		LastName:   patient.LastName,
+		MiddleName: patient.MiddleName,
+		Phone:      patient.Phone,
+		Role:       domain.RolePatient,
+		IsActive:   true,
+	}
+
+	return &domain.AuthResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		User:         userResp,
+	}, nil
+}
+
+func (s *authService) TelegramTokenLogin(ctx context.Context, req domain.TelegramTokenRequest) (*domain.AuthResponse, error) {
+	if s.tokenRepo == nil || s.patientRepo == nil {
+		return nil, errors.New("вход через Telegram недоступен")
+	}
+
+	// Find and validate one-time token
+	token, err := s.tokenRepo.FindByToken(ctx, req.Token)
+	if err != nil {
+		return nil, errors.New("недействительный или истёкший токен")
+	}
+
+	// Get patient
+	patient, err := s.patientRepo.FindByID(ctx, token.PatientID)
+	if err != nil {
+		return nil, errors.New("пациент не найден")
+	}
+
+	// Mark token as used
+	if err := s.tokenRepo.MarkAsUsed(ctx, token.ID); err != nil {
+		return nil, errors.New("не удалось использовать токен")
+	}
+
+	// Generate JWT tokens
 	accessToken, err := s.tokenService.GenerateAccessToken(patient.ID, domain.RolePatient)
 	if err != nil {
 		return nil, errors.New("не удалось сгенерировать токен доступа")

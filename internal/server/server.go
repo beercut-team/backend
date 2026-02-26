@@ -37,6 +37,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	commentRepo := repository.NewCommentRepository(db)
 	notifRepo := repository.NewNotificationRepository(db)
 	telegramRepo := repository.NewTelegramRepository(db)
+	telegramTokenRepo := repository.NewTelegramTokenRepository(db)
 	syncRepo := repository.NewSyncRepository(db)
 	_ = auditRepo
 
@@ -54,7 +55,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	}
 
 	// --- Telegram Bot (создаём рано, чтобы передать в сервисы) ---
-	bot, err := telegram.NewBot(cfg.TelegramBotToken, patientRepo, telegramRepo, userRepo)
+	bot, err := telegram.NewBot(cfg.TelegramBotToken, patientRepo, telegramRepo, telegramTokenRepo, userRepo)
 	if err != nil {
 		log.Warn().Err(err).Msg("Telegram bot failed to start")
 	}
@@ -64,7 +65,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 
 	// --- Services ---
 	tokenService := service.NewTokenService(cfg)
-	authService := service.NewAuthServiceWithPatient(userRepo, patientRepo, tokenService)
+	authService := service.NewAuthServiceWithPatient(userRepo, patientRepo, telegramTokenRepo, tokenService)
 	districtService := service.NewDistrictService(districtRepo)
 	patientService := service.NewPatientService(patientRepo, checklistRepo, bot)
 	checklistService := service.NewChecklistService(checklistRepo, patientRepo)
@@ -129,6 +130,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
 			auth.POST("/patient-login", authHandler.PatientLogin)
+			auth.POST("/telegram-token-login", authHandler.TelegramTokenLogin)
 			auth.POST("/refresh", authHandler.Refresh)
 		}
 

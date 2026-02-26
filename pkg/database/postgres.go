@@ -40,6 +40,7 @@ func NewPostgres(cfg *config.Config) (*gorm.DB, error) {
 		&domain.Comment{},
 		&domain.Notification{},
 		&domain.TelegramBinding{},
+		&domain.TelegramLoginToken{},
 		&domain.SyncQueue{},
 	); err != nil {
 		return nil, fmt.Errorf("не удалось выполнить миграцию: %w", err)

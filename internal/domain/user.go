@@ -55,6 +55,10 @@ type PatientLoginRequest struct {
 	AccessCode string `json:"access_code" binding:"required"`
 }
 
+type TelegramTokenRequest struct {
+	Token string `json:"token" binding:"required"`
+}
+
 type RefreshRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
