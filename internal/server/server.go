@@ -68,7 +68,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	authService := service.NewAuthServiceWithPatient(userRepo, patientRepo, telegramTokenRepo, tokenService)
 	districtService := service.NewDistrictService(districtRepo)
 	patientService := service.NewPatientService(db, patientRepo, checklistRepo, notifRepo, bot)
-	checklistService := service.NewChecklistService(checklistRepo, patientRepo)
+	checklistService := service.NewChecklistService(checklistRepo, patientRepo, notifRepo, bot)
 	mediaService := service.NewMediaService(mediaRepo, store)
 	iolService := service.NewIOLService(iolRepo)
 	surgeryService := service.NewSurgeryService(surgeryRepo, patientRepo, checklistRepo, notifRepo)

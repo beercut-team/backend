@@ -3,10 +3,12 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/beercut-team/backend-boilerplate/internal/domain"
 	"github.com/beercut-team/backend-boilerplate/internal/repository"
+	"github.com/beercut-team/backend-boilerplate/pkg/telegram"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
@@ -31,10 +33,17 @@ type ChecklistProgress struct {
 type checklistService struct {
 	repo        repository.ChecklistRepository
 	patientRepo repository.PatientRepository
+	notifRepo   repository.NotificationRepository
+	bot         *telegram.Bot
 }
 
-func NewChecklistService(repo repository.ChecklistRepository, patientRepo repository.PatientRepository) ChecklistService {
-	return &checklistService{repo: repo, patientRepo: patientRepo}
+func NewChecklistService(repo repository.ChecklistRepository, patientRepo repository.PatientRepository, notifRepo repository.NotificationRepository, bot *telegram.Bot) ChecklistService {
+	return &checklistService{
+		repo:        repo,
+		patientRepo: patientRepo,
+		notifRepo:   notifRepo,
+		bot:         bot,
+	}
 }
 
 func (s *checklistService) GetByPatient(ctx context.Context, patientID uint) ([]domain.ChecklistItem, error) {
@@ -70,6 +79,19 @@ func (s *checklistService) CreateItem(ctx context.Context, req domain.CreateChec
 		return nil, errors.New("не удалось создать пункт чек-листа")
 	}
 
+	// Отправить уведомление пациенту через Telegram
+	if s.bot != nil {
+		message := fmt.Sprintf("📋 Добавлен новый пункт в чек-лист\n\n%s", item.Name)
+		if item.Description != "" {
+			message += fmt.Sprintf("\n%s", item.Description)
+		}
+		if item.IsRequired {
+			message += "\n\n⚠️ Обязательный пункт"
+		}
+		s.bot.NotifyPatient(ctx, req.PatientID, message)
+		log.Info().Uint("patient_id", req.PatientID).Str("item_name", item.Name).Msg("уведомление пациенту о новом пункте чек-листа отправлено")
+	}
+
 	return item, nil
 }
 
@@ -82,9 +104,13 @@ func (s *checklistService) UpdateItem(ctx context.Context, id uint, req domain.U
 		return nil, err
 	}
 
+	oldStatus := item.Status
+	statusChanged := false
+
 	if req.Status != "" {
 		status := domain.ChecklistItemStatus(req.Status)
 		item.Status = status
+		statusChanged = (oldStatus != status)
 		if status == domain.ChecklistStatusCompleted {
 			now := time.Now()
 			item.CompletedAt = &now
@@ -100,6 +126,29 @@ func (s *checklistService) UpdateItem(ctx context.Context, id uint, req domain.U
 
 	if err := s.repo.UpdateItem(ctx, item); err != nil {
 		return nil, errors.New("не удалось обновить элемент чек-листа")
+	}
+
+	// Отправить уведомление пациенту при изменении статуса
+	if statusChanged && s.bot != nil {
+		var message string
+		switch item.Status {
+		case domain.ChecklistStatusCompleted:
+			message = fmt.Sprintf("✅ Пункт чек-листа выполнен\n\n%s", item.Name)
+			if item.Result != "" {
+				message += fmt.Sprintf("\n\nРезультат: %s", item.Result)
+			}
+		case domain.ChecklistStatusInProgress:
+			message = fmt.Sprintf("⏳ Пункт чек-листа в работе\n\n%s", item.Name)
+		case domain.ChecklistStatusRejected:
+			message = fmt.Sprintf("❌ Пункт чек-листа отклонён\n\n%s", item.Name)
+			if item.Notes != "" {
+				message += fmt.Sprintf("\n\nПримечание: %s", item.Notes)
+			}
+		}
+		if message != "" {
+			s.bot.NotifyPatient(ctx, item.PatientID, message)
+			log.Info().Uint("patient_id", item.PatientID).Str("item_name", item.Name).Str("status", string(item.Status)).Msg("уведомление пациенту об обновлении чек-листа отправлено")
+		}
 	}
 
 	// Check if all required items are completed
@@ -133,6 +182,27 @@ func (s *checklistService) ReviewItem(ctx context.Context, id uint, req domain.R
 
 	if err := s.repo.UpdateItem(ctx, item); err != nil {
 		return nil, errors.New("не удалось проверить элемент чек-листа")
+	}
+
+	// Отправить уведомление пациенту о результате проверки
+	if s.bot != nil {
+		var message string
+		if status == domain.ChecklistStatusCompleted {
+			message = fmt.Sprintf("✅ Хирург одобрил пункт чек-листа\n\n%s", item.Name)
+			if req.ReviewNote != "" {
+				message += fmt.Sprintf("\n\nКомментарий: %s", req.ReviewNote)
+			}
+		} else if status == domain.ChecklistStatusRejected {
+			message = fmt.Sprintf("❌ Хирург отклонил пункт чек-листа\n\n%s", item.Name)
+			if req.ReviewNote != "" {
+				message += fmt.Sprintf("\n\nПричина: %s", req.ReviewNote)
+			}
+			message += "\n\nОбратитесь к врачу для уточнения деталей."
+		}
+		if message != "" {
+			s.bot.NotifyPatient(ctx, item.PatientID, message)
+			log.Info().Uint("patient_id", item.PatientID).Str("item_name", item.Name).Str("review_status", string(status)).Msg("уведомление пациенту о проверке чек-листа отправлено")
+		}
 	}
 
 	s.CheckAndTransition(ctx, item.PatientID)

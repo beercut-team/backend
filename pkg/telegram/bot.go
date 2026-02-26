@@ -473,6 +473,21 @@ func (b *Bot) NotifyPatientNewAccessCode(ctx context.Context, patientID uint, ne
 	b.sendMessage(binding.ChatID, message)
 }
 
+// NotifyPatient отправляет произвольное уведомление пациенту
+func (b *Bot) NotifyPatient(ctx context.Context, patientID uint, message string) {
+	if b == nil || b.api == nil {
+		return
+	}
+
+	binding, err := b.telegramRepo.FindByPatientID(ctx, patientID)
+	if err != nil || !binding.IsActive {
+		log.Debug().Uint("patient_id", patientID).Msg("пациент не привязан к Telegram")
+		return
+	}
+
+	b.sendMessage(binding.ChatID, message)
+}
+
 func (b *Bot) sendMessage(chatID int64, text string) {
 	msg := tgbotapi.NewMessage(chatID, text)
 	if _, err := b.api.Send(msg); err != nil {
