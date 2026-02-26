@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/beercut-team/backend-boilerplate/internal/domain"
@@ -213,13 +214,14 @@ func (s *patientService) Update(ctx context.Context, id uint, req domain.UpdateP
 		return nil, errors.New("не удалось обновить данные пациента")
 	}
 
-	// Создать уведомление при изменении диагноза
+	// Создать уведомление врачу при изменении диагноза
 	if diagnosisChanged && s.notifRepo != nil && p.Diagnosis != "" {
+		patientName := p.LastName + " " + p.FirstName
 		s.notifRepo.Create(ctx, &domain.Notification{
-			UserID:     id,
-			Type:       domain.NotifStatusChange, // Используем существующий тип
-			Title:      "Установлен диагноз",
-			Body:       "Ваш диагноз: " + p.Diagnosis,
+			UserID:     p.DoctorID,
+			Type:       domain.NotifStatusChange,
+			Title:      "Диагноз установлен",
+			Body:       fmt.Sprintf("Пациент %s: установлен диагноз - %s", patientName, p.Diagnosis),
 			EntityType: "patient",
 			EntityID:   id,
 		})
@@ -281,18 +283,32 @@ func (s *patientService) ChangeStatus(ctx context.Context, id uint, req domain.P
 		Comment:    req.Comment,
 	})
 
-	// Создать уведомление для пациента о смене статуса
+	// Создать уведомления для врачей о смене статуса
 	if s.notifRepo != nil {
 		statusText := domain.GetStatusDisplayName(req.Status)
+		patientName := p.LastName + " " + p.FirstName
 
+		// Уведомить лечащего врача
 		s.notifRepo.Create(ctx, &domain.Notification{
-			UserID:     id, // ID пациента, не врача!
+			UserID:     p.DoctorID,
 			Type:       domain.NotifStatusChange,
-			Title:      "Статус изменен",
-			Body:       "Ваш статус изменен на: " + statusText,
+			Title:      "Статус пациента изменен",
+			Body:       fmt.Sprintf("Пациент %s: статус изменен на %s", patientName, statusText),
 			EntityType: "patient",
 			EntityID:   id,
 		})
+
+		// Уведомить хирурга, если назначен
+		if p.SurgeonID != nil && *p.SurgeonID != changedBy {
+			s.notifRepo.Create(ctx, &domain.Notification{
+				UserID:     *p.SurgeonID,
+				Type:       domain.NotifStatusChange,
+				Title:      "Статус пациента изменен",
+				Body:       fmt.Sprintf("Пациент %s: статус изменен на %s", patientName, statusText),
+				EntityType: "patient",
+				EntityID:   id,
+			})
+		}
 	}
 
 	// Отправить уведомление пациенту через Telegram
@@ -525,16 +541,31 @@ func (s *patientService) BatchUpdate(ctx context.Context, id uint, req domain.Ba
 	}
 
 	// Уведомления отправляем после успешной транзакции
-	if req.Status != nil && s.notifRepo != nil {
+	if req.Status != nil && s.notifRepo != nil && response.Patient != nil {
 		statusText := domain.GetStatusDisplayName(req.Status.Status)
+		patientName := response.Patient.LastName + " " + response.Patient.FirstName
+
+		// Уведомить лечащего врача
 		s.notifRepo.Create(ctx, &domain.Notification{
-			UserID:     id,
+			UserID:     response.Patient.DoctorID,
 			Type:       domain.NotifStatusChange,
-			Title:      "Статус изменен",
-			Body:       "Ваш статус изменен на: " + statusText,
+			Title:      "Статус пациента изменен",
+			Body:       fmt.Sprintf("Пациент %s: статус изменен на %s", patientName, statusText),
 			EntityType: "patient",
 			EntityID:   id,
 		})
+
+		// Уведомить хирурга, если назначен
+		if response.Patient.SurgeonID != nil {
+			s.notifRepo.Create(ctx, &domain.Notification{
+				UserID:     *response.Patient.SurgeonID,
+				Type:       domain.NotifStatusChange,
+				Title:      "Статус пациента изменен",
+				Body:       fmt.Sprintf("Пациент %s: статус изменен на %s", patientName, statusText),
+				EntityType: "patient",
+				EntityID:   id,
+			})
+		}
 	}
 
 	if req.Status != nil && s.bot != nil {
