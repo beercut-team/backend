@@ -15,12 +15,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var allowedTypes = map[string]bool{
-	"image/jpeg":      true,
-	"image/png":       true,
-	"application/pdf": true,
-}
-
 const maxFileSize = 20 * 1024 * 1024 // 20MB
 
 type MediaService interface {
@@ -43,9 +37,6 @@ func NewMediaService(repo repository.MediaRepository, store storage.Storage) Med
 }
 
 func (s *mediaService) Upload(ctx context.Context, patientID, uploadedBy uint, fileName, contentType, category string, size int64, reader io.Reader) (*domain.Media, error) {
-	if !allowedTypes[contentType] {
-		return nil, errors.New("тип файла не разрешён, допустимые: jpg, png, pdf")
-	}
 	if size > maxFileSize {
 		return nil, errors.New("файл слишком большой, максимум 20МБ")
 	}
