@@ -84,12 +84,15 @@ func (b *Bot) handleMessage(msg *tgbotapi.Message) {
 		b.handleStatus(ctx, msg)
 	case text == "/mypatients":
 		b.handleMyPatients(ctx, msg)
+	case text == "/rebind" || text == "/unbind":
+		b.handleRebind(ctx, msg)
 	case text == "/help":
 		b.sendMessage(msg.Chat.ID, `Доступные команды:
 
 Для пациентов:
 /start <код_доступа> — Привязать к карте пациента
 /status — Проверить статус подготовки
+/rebind — Отвязать текущего пациента и привязать нового
 
 Для врачей:
 /register <email> — Привязать аккаунт врача
@@ -118,11 +121,14 @@ func (b *Bot) handleStart(ctx context.Context, msg *tgbotapi.Message) {
 		return
 	}
 
-	// Check if already bound
+	// Check if already bound - if so, deactivate old binding
 	existing, _ := b.telegramRepo.FindByChatID(ctx, msg.Chat.ID)
 	if existing != nil {
-		b.sendMessage(msg.Chat.ID, "Этот чат уже привязан. Используйте /status для проверки статуса.")
-		return
+		// Deactivate old binding
+		if err := b.telegramRepo.Delete(ctx, msg.Chat.ID); err != nil {
+			log.Error().Err(err).Msg("Не удалось деактивировать старую привязку")
+		}
+		log.Info().Uint("old_patient_id", existing.PatientID).Uint("new_patient_id", patient.ID).Msg("Перепривязка чата")
 	}
 
 	binding := &domain.TelegramBinding{
@@ -138,7 +144,7 @@ func (b *Bot) handleStart(ctx context.Context, msg *tgbotapi.Message) {
 	}
 
 	b.sendMessage(msg.Chat.ID, fmt.Sprintf(
-		"Успешно привязано!\nПациент: %s %s\nСтатус: %s\n\nИспользуйте /status для проверки прогресса подготовки.",
+		"✅ Успешно привязано!\nПациент: %s %s\nСтатус: %s\n\nИспользуйте /status для проверки прогресса подготовки.",
 		patient.FirstName, patient.LastName, patient.Status,
 	))
 }
@@ -146,18 +152,18 @@ func (b *Bot) handleStart(ctx context.Context, msg *tgbotapi.Message) {
 func (b *Bot) handleStatus(ctx context.Context, msg *tgbotapi.Message) {
 	binding, err := b.telegramRepo.FindByChatID(ctx, msg.Chat.ID)
 	if err != nil {
-		b.sendMessage(msg.Chat.ID, "Пациент не привязан. Сначала используйте /start <код_доступа>.")
+		b.sendMessage(msg.Chat.ID, "❌ Вы не привязаны к пациенту.\n\nИспользуйте /start <код_доступа> для привязки.\nКод доступа можно получить у вашего врача.")
 		return
 	}
 
 	patient, err := b.patientRepo.FindByAccessCode(ctx, binding.AccessCode)
 	if err != nil {
-		b.sendMessage(msg.Chat.ID, "Пациент не найден. Запись могла быть удалена.")
+		b.sendMessage(msg.Chat.ID, "❌ Пациент не найден. Запись могла быть удалена.\n\nИспользуйте /rebind для привязки к новому пациенту.")
 		return
 	}
 
 	statusText := fmt.Sprintf(
-		"Пациент: %s %s\nСтатус: %s\nОперация: %s (%s)",
+		"📋 Информация о пациенте\n\nПациент: %s %s\nСтатус: %s\nОперация: %s (%s)",
 		patient.FirstName, patient.LastName,
 		patient.Status, patient.OperationType, patient.Eye,
 	)
@@ -167,6 +173,26 @@ func (b *Bot) handleStatus(ctx context.Context, msg *tgbotapi.Message) {
 	}
 
 	b.sendMessage(msg.Chat.ID, statusText)
+}
+
+func (b *Bot) handleRebind(ctx context.Context, msg *tgbotapi.Message) {
+	// Check if there's an existing binding
+	existing, err := b.telegramRepo.FindByChatID(ctx, msg.Chat.ID)
+	if err != nil {
+		b.sendMessage(msg.Chat.ID, "У вас нет активной привязки.\n\nИспользуйте /start <код_доступа> для привязки к пациенту.")
+		return
+	}
+
+	// Deactivate the existing binding
+	if err := b.telegramRepo.Delete(ctx, msg.Chat.ID); err != nil {
+		log.Error().Err(err).Msg("Не удалось деактивировать привязку")
+		b.sendMessage(msg.Chat.ID, "Произошла ошибка. Попробуйте позже.")
+		return
+	}
+
+	log.Info().Uint("patient_id", existing.PatientID).Int64("chat_id", msg.Chat.ID).Msg("Привязка деактивирована")
+
+	b.sendMessage(msg.Chat.ID, "✅ Привязка отменена.\n\nТеперь используйте /start <код_доступа> для привязки к новому пациенту.")
 }
 
 func (b *Bot) handleRegisterDoctor(ctx context.Context, msg *tgbotapi.Message) {
