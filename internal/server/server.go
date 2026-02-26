@@ -144,6 +144,10 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 			auth.POST("/refresh", authHandler.Refresh)
 		}
 
+		// Public districts (needed for registration)
+		api.GET("/districts", districtHandler.List)
+		api.GET("/districts/:id", districtHandler.GetByID)
+
 		// Protected routes
 		protected := api.Group("")
 		protected.Use(middleware.Auth(tokenService))
@@ -157,18 +161,13 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 				c.JSON(200, gin.H{"message": "pong", "user_id": userID})
 			})
 
-			// Districts (ADMIN only for mutations)
+			// Districts mutations (ADMIN only)
 			districts := protected.Group("/districts")
+			districts.Use(middleware.RequireRole(domain.RoleAdmin))
 			{
-				districts.GET("", districtHandler.List)
-				districts.GET("/:id", districtHandler.GetByID)
-				adminDistricts := districts.Group("")
-				adminDistricts.Use(middleware.RequireRole(domain.RoleAdmin))
-				{
-					adminDistricts.POST("", districtHandler.Create)
-					adminDistricts.PATCH("/:id", districtHandler.Update)
-					adminDistricts.DELETE("/:id", districtHandler.Delete)
-				}
+				districts.POST("", districtHandler.Create)
+				districts.PATCH("/:id", districtHandler.Update)
+				districts.DELETE("/:id", districtHandler.Delete)
 			}
 
 			// Patients
