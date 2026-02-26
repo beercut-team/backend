@@ -15,11 +15,14 @@ type CommentService interface {
 }
 
 type commentService struct {
-	repo repository.CommentRepository
+	repo        repository.CommentRepository
+	patientRepo repository.PatientRepository
+	userRepo    repository.UserRepository
+	notifRepo   repository.NotificationRepository
 }
 
-func NewCommentService(repo repository.CommentRepository) CommentService {
-	return &commentService{repo: repo}
+func NewCommentService(repo repository.CommentRepository, patientRepo repository.PatientRepository, userRepo repository.UserRepository, notifRepo repository.NotificationRepository) CommentService {
+	return &commentService{repo: repo, patientRepo: patientRepo, userRepo: userRepo, notifRepo: notifRepo}
 }
 
 func (s *commentService) Create(ctx context.Context, req domain.CreateCommentRequest, authorID uint) (*domain.Comment, error) {
@@ -33,6 +36,42 @@ func (s *commentService) Create(ctx context.Context, req domain.CreateCommentReq
 
 	if err := s.repo.Create(ctx, comment); err != nil {
 		return nil, errors.New("не удалось создать комментарий")
+	}
+
+	// Создать уведомление для пациента о новом комментарии
+	if s.notifRepo != nil && s.patientRepo != nil && s.userRepo != nil {
+		patient, err := s.patientRepo.FindByID(ctx, req.PatientID)
+		if err == nil && patient.DoctorID != 0 {
+			author, _ := s.userRepo.FindByID(ctx, authorID)
+			authorName := "Врач"
+			if author != nil {
+				authorName = author.Name
+			}
+
+			// Уведомление для врача пациента (если комментарий не от него)
+			if patient.DoctorID != authorID {
+				s.notifRepo.Create(ctx, &domain.Notification{
+					UserID:     patient.DoctorID,
+					Type:       domain.NotifNewComment,
+					Title:      "Новый комментарий",
+					Body:       authorName + " добавил комментарий к пациенту " + patient.LastName + " " + patient.FirstName,
+					EntityType: "comment",
+					EntityID:   comment.ID,
+				})
+			}
+
+			// Уведомление для хирурга (если назначен и комментарий не от него)
+			if patient.SurgeonID != nil && *patient.SurgeonID != authorID {
+				s.notifRepo.Create(ctx, &domain.Notification{
+					UserID:     *patient.SurgeonID,
+					Type:       domain.NotifNewComment,
+					Title:      "Новый комментарий",
+					Body:       authorName + " добавил комментарий к пациенту " + patient.LastName + " " + patient.FirstName,
+					EntityType: "comment",
+					EntityID:   comment.ID,
+				})
+			}
+		}
 	}
 
 	return comment, nil

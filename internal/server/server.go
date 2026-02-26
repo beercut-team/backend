@@ -72,7 +72,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	mediaService := service.NewMediaService(mediaRepo, store)
 	iolService := service.NewIOLService(iolRepo)
 	surgeryService := service.NewSurgeryService(surgeryRepo, patientRepo, checklistRepo, notifRepo)
-	commentService := service.NewCommentService(commentRepo)
+	commentService := service.NewCommentService(commentRepo, patientRepo, userRepo, notifRepo)
 	notifService := service.NewNotificationService(notifRepo)
 	pdfService := service.NewPDFService(patientRepo, checklistRepo)
 	syncService := service.NewSyncService(syncRepo)
