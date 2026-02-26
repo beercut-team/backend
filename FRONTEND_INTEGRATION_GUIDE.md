@@ -132,19 +132,40 @@ async function fetchWithAuth(url, options = {}) {
 | Районный врач | `DISTRICT_DOCTOR` | Создаёт и ведёт пациентов |
 | Хирург | `SURGEON` | Одобряет пациентов, планирует операции |
 | Колл-центр | `CALL_CENTER` | Только просмотр пациентов |
+| Пациент | `PATIENT` | Просмотр своих данных, создание комментариев |
 | Администратор | `ADMIN` | Полный доступ |
+
+### Вход для пациентов
+
+Пациенты входят через специальный endpoint с кодом доступа:
+
+```javascript
+const patientLoginResponse = await fetch('http://localhost:8080/api/v1/auth/patient-login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    access_code: 'a1b2c3d4' // Код из карты пациента
+  })
+});
+
+const { access_token, refresh_token, user } = await patientLoginResponse.json();
+// user.role === "PATIENT"
+```
 
 ### Матрица прав доступа
 
-| Действие | DISTRICT_DOCTOR | SURGEON | CALL_CENTER | ADMIN |
-|----------|-----------------|---------|-------------|-------|
-| Создать пациента | ✅ | ❌ | ❌ | ✅ |
-| Просмотр пациентов | ✅ | ✅ | ✅ | ✅ |
-| Обновить пациента | ✅ | ✅ | ❌ | ✅ |
-| Удалить пациента | ❌ | ❌ | ❌ | ✅ |
-| Сменить статус | ✅ | ✅ | ❌ | ✅ |
-| Одобрить пациента | ❌ | ✅ | ❌ | ✅ |
-| Создать район | ❌ | ❌ | ❌ | ✅ |
+| Действие | DISTRICT_DOCTOR | SURGEON | CALL_CENTER | PATIENT | ADMIN |
+|----------|-----------------|---------|-------------|---------|-------|
+| Создать пациента | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Просмотр своих данных | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Просмотр всех пациентов | ✅ | ✅ | ✅ | ❌ | ✅ |
+| Обновить пациента | ✅ | ✅ | ❌ | ❌ | ✅ |
+| Удалить пациента | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Сменить статус | ✅ | ✅ | ❌ | ❌ | ✅ |
+| Одобрить пациента | ❌ | ✅ | ❌ | ❌ | ✅ |
+| Создать комментарий | ✅ | ✅ | ❌ | ✅ | ✅ |
+| Просмотр чек-листа | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Создать район | ❌ | ❌ | ❌ | ❌ | ✅ |
 
 ### Проверка прав на фронтенде
 
@@ -159,6 +180,187 @@ function canDeletePatient(userRole) {
 
 function canApprovePatient(userRole) {
   return ['SURGEON', 'ADMIN'].includes(userRole);
+}
+
+function canCreateComment(userRole) {
+  return ['DISTRICT_DOCTOR', 'SURGEON', 'PATIENT', 'ADMIN'].includes(userRole);
+}
+
+function canViewAllPatients(userRole) {
+  return ['DISTRICT_DOCTOR', 'SURGEON', 'CALL_CENTER', 'ADMIN'].includes(userRole);
+}
+
+function isPatient(userRole) {
+  return userRole === 'PATIENT';
+}
+```
+
+---
+
+## 🏥 Мобильное приложение для пациентов
+
+### Вход пациента
+
+Пациенты входят через код доступа (access_code), который они получают от врача:
+
+```javascript
+async function patientLogin(accessCode) {
+  const response = await fetch('http://localhost:8080/api/v1/auth/patient-login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      access_code: accessCode
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error('Неверный код доступа');
+  }
+
+  const { access_token, refresh_token, user } = await response.json();
+
+  // Сохранить токены
+  localStorage.setItem('access_token', access_token);
+  localStorage.setItem('refresh_token', refresh_token);
+  localStorage.setItem('user', JSON.stringify(user));
+
+  return user;
+}
+```
+
+### Что может делать пациент
+
+**Просмотр своих данных:**
+```javascript
+// Получить информацию о себе
+const response = await fetchWithAuth('http://localhost:8080/api/v1/auth/me');
+const { data: patient } = await response.json();
+
+// Просмотр своего статуса
+const statusResponse = await fetchWithAuth(`http://localhost:8080/api/v1/patients/${patient.id}`);
+const { data: patientData } = await statusResponse.json();
+```
+
+**Просмотр чек-листа:**
+```javascript
+// Получить свой чек-лист
+const checklistResponse = await fetchWithAuth(
+  `http://localhost:8080/api/v1/checklists/patient/${patient.id}`
+);
+const { data: checklist } = await checklistResponse.json();
+
+// Прогресс подготовки
+const progressResponse = await fetchWithAuth(
+  `http://localhost:8080/api/v1/checklists/patient/${patient.id}/progress`
+);
+const { data: progress } = await progressResponse.json();
+// progress = { completed_count: 10, total_count: 15, percentage: 66.67 }
+```
+
+**Создание комментариев:**
+```javascript
+// Пациент может задавать вопросы врачу
+async function askDoctor(patientId, question) {
+  const response = await fetchWithAuth('http://localhost:8080/api/v1/comments', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      patient_id: patientId,
+      body: question
+    })
+  });
+
+  return await response.json();
+}
+
+// Просмотр ответов врача
+const commentsResponse = await fetchWithAuth(
+  `http://localhost:8080/api/v1/comments/patient/${patient.id}`
+);
+const { data: comments } = await commentsResponse.json();
+```
+
+**Уведомления:**
+```javascript
+// Получить уведомления
+const notificationsResponse = await fetchWithAuth(
+  'http://localhost:8080/api/v1/notifications'
+);
+const { data: notifications } = await notificationsResponse.json();
+
+// Количество непрочитанных
+const unreadResponse = await fetchWithAuth(
+  'http://localhost:8080/api/v1/notifications/unread-count'
+);
+const { data: { count } } = await unreadResponse.json();
+```
+
+### Публичный статус (без авторизации)
+
+Для QR-кодов и публичных ссылок:
+
+```javascript
+// Любой может посмотреть статус по коду доступа
+const publicResponse = await fetch(
+  `http://localhost:8080/api/public/status/${accessCode}`
+);
+const { data: publicStatus } = await publicResponse.json();
+
+// publicStatus содержит:
+// - patient_name: "Иван И." (скрыто отчество)
+// - status: "SCHEDULED"
+// - surgery_date: "2026-03-15T10:00:00Z"
+// - checklist_progress: { completed: 12, total: 15 }
+```
+
+### Пример мобильного приложения
+
+```javascript
+// PatientApp.jsx
+function PatientApp() {
+  const [patient, setPatient] = useState(null);
+  const [checklist, setChecklist] = useState([]);
+  const [progress, setProgress] = useState(null);
+
+  useEffect(() => {
+    async function loadPatientData() {
+      // Получить данные пациента
+      const meResponse = await fetchWithAuth('http://localhost:8080/api/v1/auth/me');
+      const { data: patientData } = await meResponse.json();
+      setPatient(patientData);
+
+      // Загрузить чек-лист
+      const checklistResponse = await fetchWithAuth(
+        `http://localhost:8080/api/v1/checklists/patient/${patientData.id}`
+      );
+      const { data: checklistData } = await checklistResponse.json();
+      setChecklist(checklistData);
+
+      // Загрузить прогресс
+      const progressResponse = await fetchWithAuth(
+        `http://localhost:8080/api/v1/checklists/patient/${patientData.id}/progress`
+      );
+      const { data: progressData } = await progressResponse.json();
+      setProgress(progressData);
+    }
+
+    loadPatientData();
+  }, []);
+
+  if (!patient) return <div>Загрузка...</div>;
+
+  return (
+    <div>
+      <h1>Привет, {patient.first_name}!</h1>
+      <StatusCard status={patient.status} />
+      <ProgressBar
+        completed={progress?.completed_count}
+        total={progress?.total_count}
+      />
+      <ChecklistItems items={checklist} />
+      <CommentsSection patientId={patient.id} />
+    </div>
+  );
 }
 ```
 
