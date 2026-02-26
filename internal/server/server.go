@@ -64,7 +64,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 
 	// --- Services ---
 	tokenService := service.NewTokenService(cfg)
-	authService := service.NewAuthService(userRepo, tokenService)
+	authService := service.NewAuthServiceWithPatient(userRepo, patientRepo, tokenService)
 	districtService := service.NewDistrictService(districtRepo)
 	patientService := service.NewPatientService(patientRepo, checklistRepo, bot)
 	checklistService := service.NewChecklistService(checklistRepo, patientRepo)
@@ -120,6 +120,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		{
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
+			auth.POST("/patient-login", authHandler.PatientLogin)
 			auth.POST("/refresh", authHandler.Refresh)
 		}
 

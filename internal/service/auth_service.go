@@ -13,6 +13,7 @@ import (
 type AuthService interface {
 	Register(ctx context.Context, req domain.RegisterRequest) (*domain.AuthResponse, error)
 	Login(ctx context.Context, req domain.LoginRequest) (*domain.AuthResponse, error)
+	PatientLogin(ctx context.Context, req domain.PatientLoginRequest) (*domain.AuthResponse, error)
 	Refresh(ctx context.Context, req domain.RefreshRequest) (*domain.AuthResponse, error)
 	Logout(ctx context.Context, userID uint) error
 	Me(ctx context.Context, userID uint) (*domain.UserResponse, error)
@@ -21,12 +22,21 @@ type AuthService interface {
 
 type authService struct {
 	userRepo     repository.UserRepository
+	patientRepo  repository.PatientRepository
 	tokenService TokenService
 }
 
 func NewAuthService(userRepo repository.UserRepository, tokenService TokenService) AuthService {
 	return &authService{
 		userRepo:     userRepo,
+		tokenService: tokenService,
+	}
+}
+
+func NewAuthServiceWithPatient(userRepo repository.UserRepository, patientRepo repository.PatientRepository, tokenService TokenService) AuthService {
+	return &authService{
+		userRepo:     userRepo,
+		patientRepo:  patientRepo,
 		tokenService: tokenService,
 	}
 }
@@ -84,6 +94,48 @@ func (s *authService) Login(ctx context.Context, req domain.LoginRequest) (*doma
 	}
 
 	return s.generateTokens(ctx, user)
+}
+
+func (s *authService) PatientLogin(ctx context.Context, req domain.PatientLoginRequest) (*domain.AuthResponse, error) {
+	if s.patientRepo == nil {
+		return nil, errors.New("вход по коду доступа недоступен")
+	}
+
+	// Find patient by access code (case-insensitive)
+	patient, err := s.patientRepo.FindByAccessCode(ctx, req.AccessCode)
+	if err != nil {
+		return nil, errors.New("неверный код доступа")
+	}
+
+	// Generate tokens with patient ID and PATIENT role
+	accessToken, err := s.tokenService.GenerateAccessToken(patient.ID, domain.RolePatient)
+	if err != nil {
+		return nil, errors.New("не удалось сгенерировать токен доступа")
+	}
+
+	refreshToken, err := s.tokenService.GenerateRefreshToken(patient.ID)
+	if err != nil {
+		return nil, errors.New("не удалось сгенерировать токен обновления")
+	}
+
+	// Create virtual user response from patient data
+	userResp := domain.UserResponse{
+		ID:         patient.ID,
+		Email:      patient.Email,
+		Name:       patient.FirstName + " " + patient.LastName,
+		FirstName:  patient.FirstName,
+		LastName:   patient.LastName,
+		MiddleName: patient.MiddleName,
+		Phone:      patient.Phone,
+		Role:       domain.RolePatient,
+		IsActive:   true,
+	}
+
+	return &domain.AuthResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		User:         userResp,
+	}, nil
 }
 
 func (s *authService) Refresh(ctx context.Context, req domain.RefreshRequest) (*domain.AuthResponse, error) {

@@ -49,6 +49,22 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
+func (h *AuthHandler) PatientLogin(c *gin.Context) {
+	var req domain.PatientLoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	resp, err := h.authService.PatientLogin(c.Request.Context(), req)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
 func (h *AuthHandler) Refresh(c *gin.Context) {
 	var req domain.RefreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

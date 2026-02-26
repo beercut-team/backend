@@ -51,6 +51,10 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+type PatientLoginRequest struct {
+	AccessCode string `json:"access_code" binding:"required"`
+}
+
 type RefreshRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
