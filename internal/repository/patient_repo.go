@@ -52,7 +52,9 @@ func (r *patientRepository) FindByID(ctx context.Context, id uint) (*domain.Pati
 
 func (r *patientRepository) FindByAccessCode(ctx context.Context, code string) (*domain.Patient, error) {
 	var patient domain.Patient
-	if err := r.db.WithContext(ctx).Where("access_code = ?", code).First(&patient).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("LOWER(access_code) = LOWER(?)", code).
+		Preload("Doctor").Preload("Surgeon").Preload("District").
+		First(&patient).Error; err != nil {
 		return nil, err
 	}
 	return &patient, nil
@@ -142,5 +144,5 @@ func (r *patientRepository) CountByStatus(ctx context.Context, doctorID *uint) (
 }
 
 func (r *patientRepository) CountByAccessCode(ctx context.Context, code string, count *int64) error {
-	return r.db.WithContext(ctx).Model(&domain.Patient{}).Where("access_code = ?", code).Count(count).Error
+	return r.db.WithContext(ctx).Model(&domain.Patient{}).Where("LOWER(access_code) = LOWER(?)", code).Count(count).Error
 }
