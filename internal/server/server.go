@@ -107,10 +107,18 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		c.String(200, adminHTML)
 	})
 
-	// --- Patient public page ---
+	// --- Patient pages ---
 	r.GET("/patient", func(c *gin.Context) {
 		c.Header("Content-Type", "text/html")
 		c.String(200, patientPublicHTML)
+	})
+	r.GET("/patient/login", func(c *gin.Context) {
+		c.Header("Content-Type", "text/html")
+		c.String(200, patientLoginHTML)
+	})
+	r.GET("/patient/portal", func(c *gin.Context) {
+		c.Header("Content-Type", "text/html")
+		c.String(200, patientPortalHTML)
 	})
 
 	api := r.Group("/api/v1")
