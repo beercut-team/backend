@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/beercut-team/backend-boilerplate/internal/domain"
 	"github.com/beercut-team/backend-boilerplate/internal/repository"
@@ -24,6 +25,21 @@ func NewPDFService(patientRepo repository.PatientRepository, checklistRepo repos
 	return &pdfService{patientRepo: patientRepo, checklistRepo: checklistRepo}
 }
 
+// setupPDFFont tries to load DejaVu Sans fonts, falls back to Arial if not available
+func setupPDFFont(pdf *fpdf.Fpdf) bool {
+	// Check if DejaVu Sans font files exist
+	if _, err := os.Stat("assets/fonts/DejaVuSans.ttf"); err == nil {
+		if _, err := os.Stat("assets/fonts/DejaVuSans-Bold.ttf"); err == nil {
+			// Both fonts exist, use them
+			pdf.AddUTF8Font("DejaVuSans", "", "assets/fonts/DejaVuSans.ttf")
+			pdf.AddUTF8Font("DejaVuSans", "B", "assets/fonts/DejaVuSans-Bold.ttf")
+			return true
+		}
+	}
+	// Fonts not found, use built-in Arial (no Cyrillic support but won't crash)
+	return false
+}
+
 func (s *pdfService) GenerateRoutingSheet(ctx context.Context, patientID uint) (*bytes.Buffer, error) {
 	patient, err := s.patientRepo.FindByID(ctx, patientID)
 	if err != nil {
@@ -38,15 +54,18 @@ func (s *pdfService) GenerateRoutingSheet(ctx context.Context, patientID uint) (
 	pdf := fpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
 
-	// Add UTF-8 fonts with Cyrillic support
-	pdf.AddUTF8Font("DejaVuSans", "", "assets/fonts/DejaVuSans.ttf")
-	pdf.AddUTF8Font("DejaVuSans", "B", "assets/fonts/DejaVuSans-Bold.ttf")
+	// Try to load DejaVu Sans, fallback to Arial if not available
+	useDejaVu := setupPDFFont(pdf)
+	fontFamily := "Arial"
+	if useDejaVu {
+		fontFamily = "DejaVuSans"
+	}
 
-	pdf.SetFont("DejaVuSans", "B", 16)
+	pdf.SetFont(fontFamily, "B", 16)
 	pdf.Cell(190, 10, "Routing Sheet / Marshrut list")
 	pdf.Ln(15)
 
-	pdf.SetFont("DejaVuSans", "", 11)
+	pdf.SetFont(fontFamily, "", 11)
 	pdf.Cell(190, 7, fmt.Sprintf("Patient: %s %s %s", patient.LastName, patient.FirstName, patient.MiddleName))
 	pdf.Ln(7)
 	pdf.Cell(190, 7, fmt.Sprintf("Access Code: %s", patient.AccessCode))
@@ -61,18 +80,18 @@ func (s *pdfService) GenerateRoutingSheet(ctx context.Context, patientID uint) (
 	pdf.Ln(12)
 
 	// Checklist summary
-	pdf.SetFont("DejaVuSans", "B", 13)
+	pdf.SetFont(fontFamily, "B", 13)
 	pdf.Cell(190, 10, "Checklist Items")
 	pdf.Ln(10)
 
-	pdf.SetFont("DejaVuSans", "B", 9)
+	pdf.SetFont(fontFamily, "B", 9)
 	pdf.CellFormat(80, 7, "Item", "1", 0, "", false, 0, "")
 	pdf.CellFormat(30, 7, "Category", "1", 0, "", false, 0, "")
 	pdf.CellFormat(25, 7, "Required", "1", 0, "", false, 0, "")
 	pdf.CellFormat(25, 7, "Status", "1", 0, "", false, 0, "")
 	pdf.CellFormat(30, 7, "Expires", "1", 1, "", false, 0, "")
 
-	pdf.SetFont("DejaVuSans", "", 8)
+	pdf.SetFont(fontFamily, "", 8)
 	for _, item := range items {
 		required := "No"
 		if item.IsRequired {
@@ -110,22 +129,25 @@ func (s *pdfService) GenerateChecklistReport(ctx context.Context, patientID uint
 	pdf := fpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
 
-	// Add UTF-8 fonts with Cyrillic support
-	pdf.AddUTF8Font("DejaVuSans", "", "assets/fonts/DejaVuSans.ttf")
-	pdf.AddUTF8Font("DejaVuSans", "B", "assets/fonts/DejaVuSans-Bold.ttf")
+	// Try to load DejaVu Sans, fallback to Arial if not available
+	useDejaVu := setupPDFFont(pdf)
+	fontFamily := "Arial"
+	if useDejaVu {
+		fontFamily = "DejaVuSans"
+	}
 
-	pdf.SetFont("DejaVuSans", "B", 16)
+	pdf.SetFont(fontFamily, "B", 16)
 	pdf.Cell(190, 10, "Checklist Report")
 	pdf.Ln(15)
 
-	pdf.SetFont("DejaVuSans", "", 11)
+	pdf.SetFont(fontFamily, "", 11)
 	pdf.Cell(190, 7, fmt.Sprintf("Patient: %s %s %s", patient.LastName, patient.FirstName, patient.MiddleName))
 	pdf.Ln(7)
 	pdf.Cell(190, 7, fmt.Sprintf("Operation: %s (%s)", patient.OperationType, patient.Eye))
 	pdf.Ln(12)
 
 	for _, item := range items {
-		pdf.SetFont("DejaVuSans", "B", 10)
+		pdf.SetFont(fontFamily, "B", 10)
 		statusIcon := "[ ]"
 		if item.Status == domain.ChecklistStatusCompleted {
 			statusIcon = "[X]"
@@ -137,7 +159,7 @@ func (s *pdfService) GenerateChecklistReport(ctx context.Context, patientID uint
 		pdf.Cell(190, 7, fmt.Sprintf("%s %s", statusIcon, item.Name))
 		pdf.Ln(7)
 
-		pdf.SetFont("DejaVuSans", "", 9)
+		pdf.SetFont(fontFamily, "", 9)
 		if item.Description != "" {
 			pdf.Cell(190, 5, fmt.Sprintf("   Description: %s", item.Description))
 			pdf.Ln(5)
