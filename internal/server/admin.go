@@ -913,6 +913,16 @@ function surgeryForm(s, fn) {
     const patients = window.allPatients || [];
     const users = window.allUsers || [];
     const surgeons = users.filter(u => u.role === 'SURGEON' || u.role === 'ADMIN');
+
+    // Parse date properly - extract YYYY-MM-DD from ISO string
+    let dateValue = '';
+    if (s.scheduled_date) {
+        const d = new Date(s.scheduled_date);
+        if (!isNaN(d.getTime())) {
+            dateValue = d.toISOString().split('T')[0];
+        }
+    }
+
     return ` + "`" + `
     <div class="bg-white rounded-xl shadow p-4 mb-4">
         <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -924,7 +934,7 @@ function surgeryForm(s, fn) {
                 <option value="">Выберите хирурга</option>
                 ${surgeons.map(u => ` + "`" + `<option value="${safe(u.id)}" ${s.surgeon_id===u.id?'selected':''}>${safe(u.name)}</option>` + "`" + `).join('')}
             </select>
-            <input id="sf-date" type="date" value="${safe(s.scheduled_date, '')}" class="border rounded px-3 py-2 text-sm">
+            <input id="sf-date" type="date" value="${dateValue}" class="border rounded px-3 py-2 text-sm" required>
             <select id="sf-status" class="border rounded px-3 py-2 text-sm">
                 <option value="SCHEDULED" ${s.status==='SCHEDULED'?'selected':''}>SCHEDULED</option>
                 <option value="IN_PROGRESS" ${s.status==='IN_PROGRESS'?'selected':''}>IN_PROGRESS</option>
