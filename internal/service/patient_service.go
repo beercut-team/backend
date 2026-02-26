@@ -267,7 +267,9 @@ func (s *patientService) ChangeStatus(ctx context.Context, id uint, req domain.P
 	// Валидация перехода
 	if !domain.ValidateStatusTransition(oldStatus, req.Status) {
 		log.Warn().Str("from", string(oldStatus)).Str("to", string(req.Status)).Uint("patient_id", id).Msg("недопустимый переход статуса")
-		return errors.New("недопустимый переход статуса: " + string(oldStatus) + " → " + string(req.Status))
+		fromName := domain.GetStatusDisplayName(oldStatus)
+		toName := domain.GetStatusDisplayName(req.Status)
+		return fmt.Errorf("невозможно изменить статус с '%s' на '%s'. Проверьте допустимые переходы статусов", fromName, toName)
 	}
 
 	if err := s.repo.UpdateStatus(ctx, id, req.Status); err != nil {
