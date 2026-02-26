@@ -28,6 +28,7 @@ type MediaService interface {
 	GetByID(ctx context.Context, id uint) (*domain.Media, error)
 	GetByPatient(ctx context.Context, patientID uint) ([]domain.Media, error)
 	Delete(ctx context.Context, id uint) error
+	DownloadFile(ctx context.Context, id uint) (io.ReadCloser, string, error)
 	GetDownloadURL(ctx context.Context, id uint) (string, error)
 	GetThumbnailURL(ctx context.Context, id uint) (string, error)
 }
@@ -109,6 +110,20 @@ func (s *mediaService) Delete(ctx context.Context, id uint) error {
 	}
 
 	return s.repo.Delete(ctx, id)
+}
+
+func (s *mediaService) DownloadFile(ctx context.Context, id uint) (io.ReadCloser, string, error) {
+	m, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, "", errors.New("медиафайл не найден")
+	}
+
+	reader, err := s.storage.Download(ctx, m.StoragePath)
+	if err != nil {
+		return nil, "", fmt.Errorf("не удалось скачать файл: %w", err)
+	}
+
+	return reader, m.ContentType, nil
 }
 
 func (s *mediaService) GetDownloadURL(ctx context.Context, id uint) (string, error) {

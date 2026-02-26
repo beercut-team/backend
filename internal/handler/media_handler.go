@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -73,6 +75,39 @@ func (h *MediaHandler) GetByPatient(c *gin.Context) {
 }
 
 func (h *MediaHandler) Download(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		BadRequest(c, "неверный id")
+		return
+	}
+
+	media, err := h.svc.GetByID(c.Request.Context(), uint(id))
+	if err != nil {
+		NotFound(c, err.Error())
+		return
+	}
+
+	// Stream file directly
+	reader, contentType, err := h.svc.DownloadFile(c.Request.Context(), uint(id))
+	if err != nil {
+		NotFound(c, err.Error())
+		return
+	}
+	defer reader.Close()
+
+	// Set headers for download
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", media.OriginalName))
+	c.Header("Content-Type", contentType)
+	c.Header("Content-Length", fmt.Sprintf("%d", media.Size))
+
+	// Stream file to response
+	if _, err := io.Copy(c.Writer, reader); err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *MediaHandler) DownloadURL(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		BadRequest(c, "неверный id")

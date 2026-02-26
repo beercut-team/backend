@@ -191,6 +191,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 				media.POST("/upload", mediaHandler.Upload)
 				media.GET("/patient/:patientId", mediaHandler.GetByPatient)
 				media.GET("/:id/download", mediaHandler.Download)
+				media.GET("/:id/download-url", mediaHandler.DownloadURL)
 				media.GET("/:id/thumbnail", mediaHandler.Thumbnail)
 				media.DELETE("/:id", mediaHandler.Delete)
 			}

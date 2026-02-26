@@ -1081,7 +1081,73 @@
         "tags": [
           "Media"
         ],
+        "summary": "Скачать файл напрямую",
+        "description": "Возвращает файл напрямую с правильными заголовками Content-Disposition и Content-Type. Работает для локального хранилища и MinIO.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Файл",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Файл не найден",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/media/{id}/download-url": {
+      "get": {
+        "tags": [
+          "Media"
+        ],
         "summary": "Получить URL для скачивания",
+        "description": "Возвращает presigned URL (для MinIO, действителен 15 минут) или API URL (для локального хранилища). Используйте этот endpoint если нужна ссылка, а не прямое скачивание.",
         "security": [
           {
             "BearerAuth": []
@@ -1112,7 +1178,8 @@
                       "type": "object",
                       "properties": {
                         "url": {
-                          "type": "string"
+                          "type": "string",
+                          "example": "https://minio.example.com/bucket/file.pdf?X-Amz-Signature=..."
                         }
                       }
                     }
@@ -1122,7 +1189,14 @@
             }
           },
           "404": {
-            "description": "Не найдено"
+            "description": "Файл не найден",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
