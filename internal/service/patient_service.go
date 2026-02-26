@@ -102,10 +102,10 @@ func (s *patientService) generateChecklist(ctx context.Context, patient *domain.
 	templates := domain.GetChecklistTemplates(patient.OperationType)
 	now := time.Now()
 
-	log.Info().Uint("patient_id", patient.ID).Str("operation_type", string(patient.OperationType)).Int("templates_count", len(templates)).Msg("генерация чек-листа")
+	log.Info().Uint("patient_id", patient.ID).Str("operation_type", string(patient.OperationType)).Int("templates_count", len(templates)).Msg("🔧 НАЧАЛО генерации чек-листа")
 
 	var items []domain.ChecklistItem
-	for _, t := range templates {
+	for i, t := range templates {
 		item := domain.ChecklistItem{
 			PatientID:   patient.ID,
 			Name:        t.Name,
@@ -118,7 +118,7 @@ func (s *patientService) generateChecklist(ctx context.Context, patient *domain.
 			exp := now.AddDate(0, 0, t.ExpiresInDays)
 			item.ExpiresAt = &exp
 		}
-		log.Debug().Str("name", t.Name).Bool("is_required", t.IsRequired).Msg("создание пункта чек-листа")
+		log.Info().Int("index", i).Str("name", t.Name).Bool("template_required", t.IsRequired).Bool("item_required", item.IsRequired).Msg("📝 создание пункта")
 		items = append(items, item)
 	}
 
