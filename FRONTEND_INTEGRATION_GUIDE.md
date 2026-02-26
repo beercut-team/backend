@@ -13,8 +13,10 @@
 3. [RBAC и права доступа](#rbac-и-права-доступа)
 4. [State Machine пациентов](#state-machine-пациентов)
 5. [Основные endpoints](#основные-endpoints)
-6. [Обработка ошибок](#обработка-ошибок)
-7. [Примеры кода](#примеры-кода)
+6. [Медицинские стандарты](#медицинские-стандарты)
+7. [Интеграции с внешними системами](#интеграции-с-внешними-системами)
+8. [Обработка ошибок](#обработка-ошибок)
+9. [Примеры кода](#примеры-кода)
 
 ---
 
@@ -594,6 +596,247 @@ GET /api/public/status/{access_code}
       "total": 15
     }
   }
+}
+```
+
+---
+
+## 🏥 Медицинские стандарты
+
+### Поиск кодов диагнозов ICD-10
+
+```javascript
+GET /api/v1/medical-codes/icd10/search?q=катаракта
+Authorization: Bearer {token}
+
+// Response
+{
+  "success": true,
+  "data": [
+    {
+      "code": "H25.1",
+      "display": "Старческая ядерная катаракта",
+      "system": "http://hl7.org/fhir/sid/icd-10"
+    },
+    {
+      "code": "H25.0",
+      "display": "Старческая начальная катаракта",
+      "system": "http://hl7.org/fhir/sid/icd-10"
+    }
+  ],
+  "count": 2
+}
+```
+
+### Поиск кодов процедур SNOMED-CT
+
+```javascript
+GET /api/v1/medical-codes/snomed/search?q=факоэмульсификация
+Authorization: Bearer {token}
+
+// Response
+{
+  "success": true,
+  "data": [
+    {
+      "code": "397544007",
+      "display": "Факоэмульсификация катаракты",
+      "system": "http://snomed.info/sct"
+    }
+  ],
+  "count": 1
+}
+```
+
+### Поиск кодов наблюдений LOINC
+
+```javascript
+GET /api/v1/medical-codes/loinc/search?q=длина
+Authorization: Bearer {token}
+
+// Response
+{
+  "success": true,
+  "data": [
+    {
+      "code": "79893-4",
+      "display": "Длина оси глаза",
+      "system": "http://loinc.org"
+    }
+  ],
+  "count": 1
+}
+```
+
+### Обновление медицинских метаданных пациента
+
+```javascript
+POST /api/v1/patients/{id}/medical-metadata
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "diagnosis_codes": [
+    {
+      "code": "H25.1",
+      "display": "Старческая ядерная катаракта",
+      "system": "http://hl7.org/fhir/sid/icd-10"
+    }
+  ],
+  "procedure_codes": [
+    {
+      "code": "397544007",
+      "display": "Факоэмульсификация катаракты",
+      "system": "http://snomed.info/sct"
+    }
+  ],
+  "observations": [
+    {
+      "code": "79893-4",
+      "display": "Длина оси глаза",
+      "system": "http://loinc.org",
+      "value": "23.5",
+      "unit": "mm",
+      "observed_at": "2026-02-26T10:00:00Z"
+    }
+  ]
+}
+
+// Response
+{
+  "success": true,
+  "message": "Медицинские метаданные обновлены"
+}
+```
+
+---
+
+## 🔗 Интеграции с внешними системами
+
+### ЕМИАС (Москва)
+
+#### Экспорт пациента в ЕМИАС
+
+```javascript
+POST /api/v1/integrations/emias/patients/{id}/export
+Authorization: Bearer {token}
+
+// Response
+{
+  "success": true,
+  "external_id": "EMIAS-a1b2c3d4",
+  "message": "Пациент успешно экспортирован в ЕМИАС"
+}
+```
+
+#### Создание случая в ЕМИАС
+
+```javascript
+POST /api/v1/integrations/emias/patients/{id}/case
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "surgery_date": "2026-03-15",
+  "procedure_code": "397544007",
+  "diagnosis_code": "H25.1"
+}
+
+// Response
+{
+  "success": true,
+  "external_id": "CASE-e5f6g7h8",
+  "message": "Случай успешно создан в ЕМИАС"
+}
+```
+
+#### Получение статуса синхронизации с ЕМИАС
+
+```javascript
+GET /api/v1/integrations/emias/patients/{id}/status
+Authorization: Bearer {token}
+
+// Response
+{
+  "success": true,
+  "patient_id": "EMIAS-a1b2c3d4",
+  "case_id": "CASE-e5f6g7h8",
+  "status": "synced",
+  "last_sync_at": "2026-02-26T12:00:00Z"
+}
+```
+
+### РИАМС (Региональные системы)
+
+#### Получение списка регионов
+
+```javascript
+GET /api/v1/integrations/riams/regions
+Authorization: Bearer {token}
+
+// Response
+{
+  "success": true,
+  "data": [
+    { "code": "77", "name": "Москва" },
+    { "code": "78", "name": "Санкт-Петербург" },
+    { "code": "50", "name": "Московская область" }
+  ],
+  "count": 10
+}
+```
+
+#### Экспорт пациента в РИАМС
+
+```javascript
+POST /api/v1/integrations/riams/patients/{id}/export
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "region_code": "77"
+}
+
+// Response
+{
+  "success": true,
+  "external_id": "RIAMS-77-a1b2c3d4",
+  "message": "Пациент успешно экспортирован в РИАМС"
+}
+```
+
+#### Получение статуса синхронизации с РИАМС
+
+```javascript
+GET /api/v1/integrations/riams/patients/{id}/status
+Authorization: Bearer {token}
+
+// Response
+{
+  "success": true,
+  "patient_id": "RIAMS-77-a1b2c3d4",
+  "region_code": "77",
+  "status": "synced",
+  "last_sync_at": "2026-02-26T12:00:00Z"
+}
+```
+
+### Валидация перед экспортом
+
+Перед экспортом в ЕМИАС или РИАМС система автоматически проверяет:
+- ФИО пациента (обязательно)
+- Дата рождения (обязательно)
+- СНИЛС (предупреждение, если отсутствует)
+- Полис ОМС (предупреждение, если отсутствует)
+
+Если валидация не пройдена, API вернёт ошибку с деталями:
+
+```javascript
+{
+  "success": false,
+  "error": "валидация не пройдена",
+  "errors": ["Дата рождения обязательна"],
+  "warnings": ["СНИЛС не указан", "Полис ОМС не указан"]
 }
 ```
 
