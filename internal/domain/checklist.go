@@ -27,12 +27,12 @@ type ChecklistTemplate struct {
 type ChecklistItem struct {
 	ID           uint                `gorm:"primaryKey" json:"id"`
 	PatientID    uint                `gorm:"index;not null" json:"patient_id"`
-	TemplateID   uint                `gorm:"index" json:"template_id"`
+	TemplateID   *uint               `gorm:"index" json:"template_id"`
 	Template     *ChecklistTemplate  `gorm:"foreignKey:TemplateID" json:"template,omitempty"`
 	Name         string              `gorm:"not null" json:"name"`
 	Description  string              `gorm:"type:text" json:"description"`
 	Category     string              `gorm:"type:varchar(50)" json:"category"`
-	IsRequired   bool                `gorm:"default:true" json:"is_required"`
+	IsRequired   bool                `json:"is_required"`
 	Status       ChecklistItemStatus `gorm:"type:varchar(20);default:'PENDING';not null;index" json:"status"`
 	Result       string              `gorm:"type:text" json:"result"`
 	Notes        string              `gorm:"type:text" json:"notes"`

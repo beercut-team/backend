@@ -7,6 +7,7 @@ import (
 
 	"github.com/beercut-team/backend-boilerplate/internal/domain"
 	"github.com/beercut-team/backend-boilerplate/internal/repository"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -161,23 +162,42 @@ func (s *checklistService) GetProgress(ctx context.Context, patientID uint) (*Ch
 func (s *checklistService) CheckAndTransition(ctx context.Context, patientID uint) error {
 	_, _, required, requiredCompleted, err := s.repo.CountByPatient(ctx, patientID)
 	if err != nil {
+		log.Error().Err(err).Uint("patient_id", patientID).Msg("ошибка подсчёта пунктов чек-листа")
 		return err
 	}
+
+	log.Info().Uint("patient_id", patientID).Int64("required", required).Int64("required_completed", requiredCompleted).Msg("проверка автоперехода статуса")
 
 	if required > 0 && required == requiredCompleted {
 		p, err := s.patientRepo.FindByID(ctx, patientID)
 		if err != nil {
+			log.Error().Err(err).Uint("patient_id", patientID).Msg("не удалось найти пациента для автоперехода")
 			return err
 		}
+
+		log.Info().Uint("patient_id", patientID).Str("current_status", string(p.Status)).Msg("все обязательные пункты выполнены")
+
 		if p.Status == domain.PatientStatusInProgress {
-			s.patientRepo.UpdateStatus(ctx, patientID, domain.PatientStatusPendingReview)
-			s.patientRepo.CreateStatusHistory(ctx, &domain.PatientStatusHistory{
+			if err := s.patientRepo.UpdateStatus(ctx, patientID, domain.PatientStatusPendingReview); err != nil {
+				log.Error().Err(err).Uint("patient_id", patientID).Msg("не удалось обновить статус пациента")
+				return err
+			}
+
+			if err := s.patientRepo.CreateStatusHistory(ctx, &domain.PatientStatusHistory{
 				PatientID:  patientID,
 				FromStatus: domain.PatientStatusInProgress,
 				ToStatus:   domain.PatientStatusPendingReview,
 				Comment:    "Все обязательные пункты чек-листа выполнены",
-			})
+			}); err != nil {
+				log.Error().Err(err).Uint("patient_id", patientID).Msg("не удалось создать историю статуса")
+			}
+
+			log.Info().Uint("patient_id", patientID).Msg("статус автоматически изменён на PENDING_REVIEW")
+		} else {
+			log.Info().Uint("patient_id", patientID).Str("current_status", string(p.Status)).Msg("статус не IN_PROGRESS, автопереход не требуется")
 		}
+	} else {
+		log.Debug().Uint("patient_id", patientID).Int64("required", required).Int64("required_completed", requiredCompleted).Msg("не все обязательные пункты выполнены")
 	}
 	return nil
 }

@@ -74,6 +74,11 @@ func main() {
 		log.Fatal().Err(err).Msg("не удалось выполнить миграцию")
 	}
 
+	// Remove default constraint from is_required column
+	if err := db.Exec("ALTER TABLE checklist_items ALTER COLUMN is_required DROP DEFAULT").Error; err != nil {
+		log.Warn().Err(err).Msg("не удалось удалить DEFAULT для is_required (возможно, его уже нет)")
+	}
+
 	log.Info().Msg("✅ База данных очищена и готова к заполнению")
 	fmt.Println("\nТеперь запустите: go run ./cmd/seed")
 }
