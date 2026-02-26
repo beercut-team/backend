@@ -1931,7 +1931,8 @@
       "BearerAuth": {
         "type": "http",
         "scheme": "bearer",
-        "bearerFormat": "JWT"
+        "bearerFormat": "JWT",
+        "description": "JWT токен можно передать через заголовок Authorization: Bearer <token> или через query параметр ?token=<token>"
       }
     },
     "schemas": {
