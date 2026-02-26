@@ -59,8 +59,13 @@ type Patient struct {
 	OMSPolicy       string                    `gorm:"type:varchar(16)" json:"oms_policy,omitempty"`
 	Gender          string                    `gorm:"type:varchar(10)" json:"gender,omitempty"` // male, female
 
-	CreatedAt      time.Time     `json:"created_at"`
-	UpdatedAt      time.Time     `json:"updated_at"`
+	// Human-readable display names (computed fields, not stored in DB)
+	StatusDisplay        string `gorm:"-" json:"status_display"`
+	OperationTypeDisplay string `gorm:"-" json:"operation_type_display"`
+	EyeDisplay           string `gorm:"-" json:"eye_display"`
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type PatientStatusHistory struct {
@@ -154,6 +159,13 @@ func GetEyeDisplayName(eye string) string {
 	return eye
 }
 
+// PopulateDisplayNames заполняет человекочитаемые поля
+func (p *Patient) PopulateDisplayNames() {
+	p.StatusDisplay = GetStatusDisplayName(p.Status)
+	p.OperationTypeDisplay = GetOperationTypeDisplayName(p.OperationType)
+	p.EyeDisplay = GetEyeDisplayName(p.Eye)
+}
+
 // --- Requests ---
 
 type CreatePatientRequest struct {
@@ -224,4 +236,7 @@ type PatientPublicResponse struct {
 	Status        PatientStatus          `json:"status"`
 	SurgeryDate   *time.Time             `json:"surgery_date"`
 	StatusHistory []PatientStatusHistory `json:"status_history"`
+
+	// Human-readable display names
+	StatusDisplay string `json:"status_display"`
 }

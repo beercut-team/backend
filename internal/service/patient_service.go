@@ -94,6 +94,7 @@ func (s *patientService) Create(ctx context.Context, req domain.CreatePatientReq
 		s.bot.NotifyDoctorNewPatient(ctx, doctorID, patientName)
 	}
 
+	patient.PopulateDisplayNames()
 	return patient, nil
 }
 
@@ -131,6 +132,7 @@ func (s *patientService) GetByID(ctx context.Context, id uint) (*domain.Patient,
 		}
 		return nil, err
 	}
+	p.PopulateDisplayNames()
 	return p, nil
 }
 
@@ -150,13 +152,24 @@ func (s *patientService) GetByAccessCode(ctx context.Context, code string) (*dom
 		FirstName:     p.FirstName,
 		LastName:      p.LastName,
 		Status:        p.Status,
+		StatusDisplay: domain.GetStatusDisplayName(p.Status),
 		SurgeryDate:   p.SurgeryDate,
 		StatusHistory: history,
 	}, nil
 }
 
 func (s *patientService) List(ctx context.Context, filters repository.PatientFilters, offset, limit int) ([]domain.Patient, int64, error) {
-	return s.repo.FindAll(ctx, filters, offset, limit)
+	patients, total, err := s.repo.FindAll(ctx, filters, offset, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Populate display names for all patients
+	for i := range patients {
+		patients[i].PopulateDisplayNames()
+	}
+
+	return patients, total, nil
 }
 
 func (s *patientService) Update(ctx context.Context, id uint, req domain.UpdatePatientRequest) (*domain.Patient, error) {
@@ -227,6 +240,7 @@ func (s *patientService) Update(ctx context.Context, id uint, req domain.UpdateP
 		})
 	}
 
+	p.PopulateDisplayNames()
 	return p, nil
 }
 
@@ -360,6 +374,7 @@ func (s *patientService) RegenerateAccessCode(ctx context.Context, id uint) (*do
 		s.bot.NotifyPatientNewAccessCode(ctx, id, newCode)
 	}
 
+	p.PopulateDisplayNames()
 	return p, nil
 }
 
@@ -575,6 +590,11 @@ func (s *patientService) BatchUpdate(ctx context.Context, id uint, req domain.Ba
 		if req.Status.Status == domain.PatientStatusPendingReview {
 			s.bot.NotifySurgeonReviewNeeded(ctx, id)
 		}
+	}
+
+	// Populate display names for response
+	if response.Patient != nil {
+		response.Patient.PopulateDisplayNames()
 	}
 
 	log.Info().Uint("patient_id", id).Int("updated_items", response.UpdatedItems).Msg("batch update завершён успешно")
