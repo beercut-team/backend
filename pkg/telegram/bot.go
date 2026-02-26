@@ -153,13 +153,15 @@ func (b *Bot) handleStart(ctx context.Context, msg *tgbotapi.Message) {
 	}
 
 	if err := b.telegramRepo.Create(ctx, binding); err != nil {
-		b.sendMessage(msg.Chat.ID, "Не удалось привязать. Пожалуйста, попробуйте позже.")
+		log.Error().Err(err).Msg("Не удалось создать привязку")
+		b.sendMessage(msg.Chat.ID, fmt.Sprintf("Не удалось привязать: %v", err))
 		return
 	}
 
+	statusName := domain.GetStatusDisplayName(patient.Status)
 	b.sendMessage(msg.Chat.ID, fmt.Sprintf(
 		"✅ Успешно привязано!\nПациент: %s %s\nСтатус: %s\n\nИспользуйте /status для проверки прогресса подготовки.",
-		patient.FirstName, patient.LastName, patient.Status,
+		patient.FirstName, patient.LastName, statusName,
 	))
 }
 
@@ -203,7 +205,7 @@ func (b *Bot) handleRebind(ctx context.Context, msg *tgbotapi.Message) {
 	// Deactivate the existing binding
 	if err := b.telegramRepo.Delete(ctx, msg.Chat.ID); err != nil {
 		log.Error().Err(err).Msg("Не удалось деактивировать привязку")
-		b.sendMessage(msg.Chat.ID, "Произошла ошибка. Попробуйте позже.")
+		b.sendMessage(msg.Chat.ID, fmt.Sprintf("Произошла ошибка: %v", err))
 		return
 	}
 
@@ -229,7 +231,7 @@ func (b *Bot) handleLogin(ctx context.Context, msg *tgbotapi.Message) {
 	tokenBytes := make([]byte, 16)
 	if _, err := rand.Read(tokenBytes); err != nil {
 		log.Error().Err(err).Msg("Не удалось сгенерировать токен")
-		b.sendMessage(msg.Chat.ID, "Произошла ошибка. Попробуйте позже.")
+		b.sendMessage(msg.Chat.ID, fmt.Sprintf("Произошла ошибка при генерации токена: %v", err))
 		return
 	}
 	token := hex.EncodeToString(tokenBytes)
@@ -244,14 +246,15 @@ func (b *Bot) handleLogin(ctx context.Context, msg *tgbotapi.Message) {
 
 	if err := b.tokenRepo.Create(ctx, loginToken); err != nil {
 		log.Error().Err(err).Msg("Не удалось создать токен входа")
-		b.sendMessage(msg.Chat.ID, "Произошла ошибка. Попробуйте позже.")
+		b.sendMessage(msg.Chat.ID, fmt.Sprintf("Произошла ошибка при создании токена: %v", err))
 		return
 	}
 
 	// Get patient info
 	patient, err := b.patientRepo.FindByID(ctx, binding.PatientID)
 	if err != nil {
-		b.sendMessage(msg.Chat.ID, "Не удалось получить информацию о пациенте.")
+		log.Error().Err(err).Msg("Не удалось получить информацию о пациенте")
+		b.sendMessage(msg.Chat.ID, fmt.Sprintf("Не удалось получить информацию о пациенте: %v", err))
 		return
 	}
 
@@ -290,7 +293,8 @@ func (b *Bot) handleRegisterDoctor(ctx context.Context, msg *tgbotapi.Message) {
 	chatID := msg.Chat.ID
 	user.TelegramChatID = &chatID
 	if err := b.userRepo.Update(ctx, user); err != nil {
-		b.sendMessage(msg.Chat.ID, "Не удалось привязать аккаунт. Попробуйте позже.")
+		log.Error().Err(err).Msg("Не удалось обновить пользователя")
+		b.sendMessage(msg.Chat.ID, fmt.Sprintf("Не удалось привязать аккаунт: %v", err))
 		return
 	}
 
