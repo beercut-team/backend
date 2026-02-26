@@ -57,6 +57,14 @@
       "description": "Оффлайн синхронизация"
     },
     {
+      "name": "Medical Standards",
+      "description": "Медицинские стандарты и коды (ICD-10, SNOMED-CT, LOINC)"
+    },
+    {
+      "name": "Integrations",
+      "description": "Интеграции с внешними системами (ЕМИАС, РИАМС)"
+    },
+    {
       "name": "System",
       "description": "Системные endpoints"
     }
@@ -2030,6 +2038,407 @@
         }
       }
     },
+    "/api/v1/medical-codes/icd10/search": {
+      "get": {
+        "tags": [
+          "Medical Standards"
+        ],
+        "summary": "Поиск кодов диагнозов ICD-10",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Поисковый запрос"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список найденных кодов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MedicalCodeSearchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/medical-codes/snomed/search": {
+      "get": {
+        "tags": [
+          "Medical Standards"
+        ],
+        "summary": "Поиск кодов процедур SNOMED-CT",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Поисковый запрос"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список найденных кодов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MedicalCodeSearchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/medical-codes/loinc/search": {
+      "get": {
+        "tags": [
+          "Medical Standards"
+        ],
+        "summary": "Поиск кодов наблюдений LOINC",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Поисковый запрос"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список найденных кодов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MedicalCodeSearchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{id}/medical-metadata": {
+      "post": {
+        "tags": [
+          "Medical Standards"
+        ],
+        "summary": "Обновить медицинские метаданные пациента",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMedicalMetadataRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Метаданные обновлены",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/integrations/emias/patients/{id}/export": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Экспорт пациента в ЕМИАС",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Экспорт выполнен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EMIASExportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка валидации"
+          }
+        }
+      }
+    },
+    "/api/v1/integrations/emias/patients/{id}/case": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Создать случай в ЕМИАС",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EMIASExportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Случай создан",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EMIASExportResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/integrations/emias/patients/{id}/status": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Получить статус синхронизации с ЕМИАС",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Статус синхронизации",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EMIASStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/integrations/riams/patients/{id}/export": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Экспорт пациента в РИАМС",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RIAMSExportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Экспорт выполнен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RIAMSExportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка валидации"
+          }
+        }
+      }
+    },
+    "/api/v1/integrations/riams/patients/{id}/status": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Получить статус синхронизации с РИАМС",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Статус синхронизации",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RIAMSStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/integrations/riams/regions": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Получить список поддерживаемых регионов РИАМС",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список регионов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RIAMSRegion"
+                      }
+                    },
+                    "count": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ping": {
       "get": {
         "tags": [
@@ -3487,6 +3896,240 @@
             }
           }
         ]
+      },
+      "MedicalCodeSearchResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "example": "H25.1"
+                },
+                "display": {
+                  "type": "string",
+                  "example": "Старческая ядерная катаракта"
+                },
+                "system": {
+                  "type": "string",
+                  "example": "http://hl7.org/fhir/sid/icd-10"
+                }
+              }
+            }
+          },
+          "count": {
+            "type": "integer"
+          }
+        }
+      },
+      "UpdateMedicalMetadataRequest": {
+        "type": "object",
+        "properties": {
+          "diagnosis_codes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "display": {
+                  "type": "string"
+                },
+                "system": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "procedure_codes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "display": {
+                  "type": "string"
+                },
+                "system": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "observations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "display": {
+                  "type": "string"
+                },
+                "system": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                },
+                "unit": {
+                  "type": "string"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "extensions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      },
+      "EMIASExportRequest": {
+        "type": "object",
+        "properties": {
+          "patient_id": {
+            "type": "integer"
+          },
+          "surgery_date": {
+            "type": "string"
+          },
+          "procedure_code": {
+            "type": "string"
+          },
+          "diagnosis_code": {
+            "type": "string"
+          }
+        }
+      },
+      "EMIASExportResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "external_id": {
+            "type": "string",
+            "example": "EMIAS-a1b2c3d4"
+          },
+          "message": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "EMIASStatusResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "patient_id": {
+            "type": "string"
+          },
+          "case_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["synced", "pending", "error", "not_synced"]
+          },
+          "last_sync_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RIAMSExportRequest": {
+        "type": "object",
+        "required": ["region_code"],
+        "properties": {
+          "patient_id": {
+            "type": "integer"
+          },
+          "region_code": {
+            "type": "string",
+            "example": "77"
+          }
+        }
+      },
+      "RIAMSExportResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "external_id": {
+            "type": "string",
+            "example": "RIAMS-77-a1b2c3d4"
+          },
+          "message": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "RIAMSStatusResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "patient_id": {
+            "type": "string"
+          },
+          "region_code": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["synced", "pending", "error", "not_synced"]
+          },
+          "last_sync_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RIAMSRegion": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "77"
+          },
+          "name": {
+            "type": "string",
+            "example": "Москва"
+          }
+        }
       }
     }
   }
