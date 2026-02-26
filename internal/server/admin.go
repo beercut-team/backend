@@ -41,6 +41,49 @@ function safe(value, fallback = '—') {
     return value;
 }
 
+// Phone formatting helper
+function formatPhone(phone) {
+    if (!phone) return '—';
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 11 && cleaned.startsWith('7')) {
+        return '+7 (' + cleaned.substr(1, 3) + ') ' + cleaned.substr(4, 3) + '-' + cleaned.substr(7, 2) + '-' + cleaned.substr(9, 2);
+    }
+    return phone;
+}
+
+// Extract clean phone number from masked input
+function cleanPhone(phone) {
+    if (!phone) return '';
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 10) return '+7' + cleaned;
+    if (cleaned.length === 11 && cleaned.startsWith('7')) return '+' + cleaned;
+    return phone;
+}
+
+// Phone input mask
+function maskPhoneInput(input) {
+    input.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.startsWith('7')) value = value.substr(1);
+        if (value.startsWith('8')) value = value.substr(1);
+        if (value.length > 10) value = value.substr(0, 10);
+
+        let formatted = '+7';
+        if (value.length > 0) formatted += ' (' + value.substr(0, 3);
+        if (value.length >= 3) formatted += ') ' + value.substr(3, 3);
+        if (value.length >= 6) formatted += '-' + value.substr(6, 2);
+        if (value.length >= 8) formatted += '-' + value.substr(8, 2);
+
+        e.target.value = formatted;
+    });
+
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Backspace' && e.target.value === '+7') {
+            e.preventDefault();
+        }
+    });
+}
+
 const roleNames = {
     'ADMIN': 'Администратор',
     'CALL_CENTER': 'Колл-центр',
@@ -375,7 +418,7 @@ async function renderUsers(page = 1) {
                 <td class="px-4 py-3">${safe(u.id)}</td>
                 <td class="px-4 py-3 font-medium">${safe(u.name)}</td>
                 <td class="px-4 py-3">${safe(u.email)}</td>
-                <td class="px-4 py-3">${safe(u.phone)}</td>
+                <td class="px-4 py-3">${formatPhone(u.phone)}</td>
                 <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs ${roleBadge[u.role]||'bg-gray-100'}">${getRoleName(u.role)}</span></td>
                 <td class="px-4 py-3">${dist ? dist.name : '—'}</td>
                 <td class="px-4 py-3">${u.is_active ? '<span class="text-green-600">✓</span>' : '<span class="text-red-600">✗</span>'}</td>
@@ -402,10 +445,14 @@ async function renderUsers(page = 1) {
 
 function showCreateUser() {
     document.getElementById('user-form-area').innerHTML = userForm({}, 'createUser');
+    const phoneInput = document.getElementById('uf-phone');
+    if (phoneInput) maskPhoneInput(phoneInput);
 }
 
 function editUser(u) {
     document.getElementById('user-form-area').innerHTML = userForm(u, 'updateUser');
+    const phoneInput = document.getElementById('uf-phone');
+    if (phoneInput) maskPhoneInput(phoneInput);
 }
 
 function userForm(u, fn) {
@@ -451,7 +498,7 @@ async function createUser() {
             first_name: document.getElementById('uf-fname').value,
             last_name: document.getElementById('uf-lname').value,
             middle_name: document.getElementById('uf-mname').value,
-            phone: document.getElementById('uf-phone').value,
+            phone: cleanPhone(document.getElementById('uf-phone').value),
             role: document.getElementById('uf-role').value,
             district_id: districtId ? parseInt(districtId) : null
         })
@@ -502,7 +549,7 @@ async function renderPatients(page = 1) {
         html += ` + "`" + `<tr class="border-t ${rowColor} hover:bg-blue-50 cursor-pointer" onclick="showPatientDetails(${safe(p.id)})">
             <td class="px-4 py-3">${safe(p.id)}</td>
             <td class="px-4 py-3 font-medium">${safe(p.last_name)} ${safe(p.first_name)} ${safe(p.middle_name, '')}</td>
-            <td class="px-4 py-3">${safe(p.phone)}</td>
+            <td class="px-4 py-3">${formatPhone(p.phone)}</td>
             <td class="px-4 py-3 max-w-xs truncate">${safe(p.diagnosis)}</td>
             <td class="px-4 py-3"><span class="text-xs">${safe(p.operation_type)}</span></td>
             <td class="px-4 py-3">${safe(p.eye)}</td>
@@ -529,10 +576,14 @@ async function renderPatients(page = 1) {
 
 function showCreatePatient() {
     document.getElementById('patient-form-area').innerHTML = patientForm({}, 'createPatient');
+    const phoneInput = document.getElementById('pf-phone');
+    if (phoneInput) maskPhoneInput(phoneInput);
 }
 
 function editPatient(p) {
     document.getElementById('patient-form-area').innerHTML = patientForm(p, 'updatePatient');
+    const phoneInput = document.getElementById('pf-phone');
+    if (phoneInput) maskPhoneInput(phoneInput);
 }
 
 function patientForm(p, fn) {
@@ -578,7 +629,7 @@ async function createPatient() {
             first_name: document.getElementById('pf-fname').value,
             last_name: document.getElementById('pf-lname').value,
             middle_name: document.getElementById('pf-mname').value,
-            phone: document.getElementById('pf-phone').value,
+            phone: cleanPhone(document.getElementById('pf-phone').value),
             email: document.getElementById('pf-email').value,
             date_of_birth: document.getElementById('pf-dob').value,
             diagnosis: document.getElementById('pf-diagnosis').value,
@@ -595,7 +646,7 @@ async function updatePatient(id) {
     await api('/patients/' + id, {
         method: 'PATCH',
         body: JSON.stringify({
-            phone: document.getElementById('pf-phone').value,
+            phone: cleanPhone(document.getElementById('pf-phone').value),
             email: document.getElementById('pf-email').value,
             diagnosis: document.getElementById('pf-diagnosis').value,
             notes: document.getElementById('pf-notes').value
@@ -676,7 +727,7 @@ async function showPatientDetails(id) {
                         <div class="space-y-2 text-sm">
                             <div><span class="text-gray-600">ФИО:</span> <span class="font-medium">${safe(patient.last_name)} ${safe(patient.first_name)} ${safe(patient.middle_name, '')}</span></div>
                             <div><span class="text-gray-600">Дата рождения:</span> <span class="font-medium">${dob}</span></div>
-                            <div><span class="text-gray-600">Телефон:</span> <span class="font-medium">${safe(patient.phone)}</span></div>
+                            <div><span class="text-gray-600">Телефон:</span> <span class="font-medium">${formatPhone(patient.phone)}</span></div>
                             <div><span class="text-gray-600">Email:</span> <span class="font-medium">${safe(patient.email)}</span></div>
                             <div><span class="text-gray-600">Адрес:</span> <span class="font-medium">${safe(patient.address)}</span></div>
                         </div>

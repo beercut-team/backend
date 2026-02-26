@@ -95,9 +95,13 @@ func (b *Bot) handleStart(ctx context.Context, msg *tgbotapi.Message) {
 		return
 	}
 
-	accessCode := parts[1]
+	// Normalize access code: trim whitespace and convert to lowercase
+	accessCode := strings.ToLower(strings.TrimSpace(parts[1]))
+	log.Info().Str("access_code", accessCode).Int64("chat_id", msg.Chat.ID).Msg("Попытка привязки пациента")
+
 	patient, err := b.patientRepo.FindByAccessCode(ctx, accessCode)
 	if err != nil {
+		log.Error().Err(err).Str("access_code", accessCode).Msg("Код доступа не найден")
 		b.sendMessage(msg.Chat.ID, "Неверный код доступа. Пожалуйста, проверьте и попробуйте снова.")
 		return
 	}
