@@ -7,9 +7,9 @@ import (
 
 func TestSRKT(t *testing.T) {
 	// Test case: typical eye parameters
-	al := 23.5      // axial length in mm
-	k := 44.0       // average keratometry in D
-	aConst := 118.4 // A-constant
+	al := 23.5       // axial length in mm
+	k := 44.0        // average keratometry in D
+	aConst := 118.4  // A-constant
 	targetRef := 0.0 // target emmetropia
 
 	iolPower, predictedRef := SRKT(al, k, aConst, targetRef)

@@ -262,4 +262,4 @@ loadPatientData();
 
 </body>
 </html>
-`;
+`

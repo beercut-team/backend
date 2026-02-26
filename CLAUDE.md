@@ -1,152 +1,83 @@
-# Oculus-Feldsher Backend
+# Oculus-Feldsher Backend — Claude Operating Rules
 
-## Project Overview
-Medical platform for remote ophthalmological patient preparation (Go + Gin + GORM).
+You are working in an existing repository. DO NOT rewrite the project from scratch.
+Goal: verify current backend matches the specification below, fix mismatches with minimal diffs, and update API docs using Scalar.
 
-## Architecture
-Clean Architecture: `domain → repository → service → handler`
-- **Domain**: Entity models and DTOs (`internal/domain/`)
-- **Repository**: Data access with interface-based design (`internal/repository/`)
-- **Service**: Business logic implementing interfaces (`internal/service/`)
-- **Handler**: HTTP handlers orchestrating services (`internal/handler/`)
-- **Middleware**: Auth (JWT) + RBAC (`internal/middleware/`)
-- **Server**: Router config and DI wiring (`internal/server/server.go`)
+## Hard Rules
 
-## Tech Stack
-- **Language**: Go 1.23
-- **Framework**: Gin (HTTP), GORM (ORM)
-- **Database**: PostgreSQL 16
-- **Cache**: Redis 7
-- **Object Storage**: MinIO (or local FS for dev)
-- **Auth**: JWT (access + refresh tokens, role claims)
-- **PDF**: go-pdf/fpdf
-- **Scheduler**: robfig/cron/v3
-- **Telegram**: go-telegram-bot-api/v5
-- **Docs**: Scalar API Reference at `/docs`
+- Always start with an inventory (what exists now) before changing code.
+- Prefer minimal changes and incremental commits.
+- No mass refactors unless required to match the spec.
+- Keep existing folder structure unless it clearly blocks the spec.
+- All API changes must update OpenAPI and Scalar docs in the same PR.
 
-## Key Commands
-```bash
-go build ./...                      # Build everything
-go run ./cmd/api                    # Start the API server
-go run ./cmd/seed                   # Seed test data
-go run ./cmd/fix-access-codes       # Generate access codes for old patients
-docker-compose up                   # Start all services
-```
+## Current Target Spec (Source of Truth)
 
-## Roles & Permissions
-- **ADMIN** — full system access, user management, all CRUD operations
-- **SURGEON** — reviews checklists, schedules surgeries, approves patients
-- **DISTRICT_DOCTOR** — creates/manages patients in their district, fills checklists
-- **PATIENT** — limited public access via access code (no authentication required)
+This repo must implement the "Oculus-Feldsher" backend spec:
 
-## Patient Access Code System
+- Django + DRF, PostgreSQL, JWT (simplejwt)
+- Celery + Redis (image compression, notifications)
+- drf-spectacular OpenAPI
+- Roles: district_doctor, surgeon, patient, call_center
+- Core models: User (custom), Patient, OperationType, PreparationCase, ChecklistItem, MediaFile, IOLCalculation, Comment, Notification, AuditLog, Ulus
+- State machine: draft → in_progress → pending_review → (approved | needs_correction) → scheduled → completed; can go cancelled anytime
+- Public endpoint: /api/public/status/{short_code}/ (no auth)
+- Batch endpoint: POST /api/cases/{id}/batch-update/ for offline mode
+- Files must NOT be served by direct links without auth checks
 
-### Overview
-Each patient receives a unique 8-character hex access code upon creation. This code enables:
-- **Public status tracking** without authentication
-- **Telegram bot integration** for real-time notifications
-- **Secure patient identification** without exposing personal data
+The detailed spec text is in the conversation (treat it as canonical).
 
-### Access Code Generation
-- Auto-generated on patient creation: `domain.GenerateAccessCode()`
-- Format: 8-character hex string (e.g., `a1b2c3d4`)
-- Stored in `patients.access_code` (unique index)
+## Required Work Plan (Must Follow)
 
-### Public Access Points
+### Phase 1 — Inventory (NO code changes)
 
-#### 1. Web Interface
-**URL**: `/patient?code=<access_code>`
-- Beautiful responsive UI with Tailwind CSS
-- Shows: patient name, status, surgery date, status history
-- No authentication required
-- Mobile-friendly design
+1. List apps/modules and URLs:
+   - show installed apps, urls.py routing, viewsets
+2. List current models and fields (especially User, Patient, PreparationCase, ChecklistItem)
+3. List permissions matrix currently implemented
+4. Generate current OpenAPI schema and summarize endpoints
+5. Produce a GAP REPORT: "Spec vs Current", with exact file references
 
-#### 2. Public API
-**Endpoint**: `GET /api/v1/patients/public/:accessCode`
-- Returns: `PatientPublicResponse` (limited fields)
-- No auth token required
-- Used by web interface and external integrations
+### Phase 2 — Fixes (Minimal diffs)
 
-#### 3. Telegram Bot
-**Commands**:
-- `/start <access_code>` — bind patient to Telegram chat
-- `/status` — check current preparation status
-- `/login` — get one-time login link for patient portal
-- Automatic notifications on status changes
+Fix gaps in this order:
 
-**Patient Authentication Flow**:
-1. **Direct login**: `POST /api/v1/auth/patient-login` with `{"access_code": "a1b2c3d4"}`
-2. **Telegram login**:
-   - Patient uses `/login` command in Telegram bot
-   - Bot generates one-time token (valid 15 min)
-   - Patient clicks link: `/patient/portal?token=<token>`
-   - Frontend calls `POST /api/v1/auth/telegram-token-login` with token
-   - Returns JWT tokens for authenticated access
+1. Auth/roles correctness (User.role, JWT, /api/auth/\* endpoints)
+2. Ulus as FK table and filters by ulus everywhere required
+3. PreparationCase state machine + transitions endpoints
+4. Checklist autogeneration from OperationType.checklist_template
+5. Media upload/download with auth gate
+6. Batch-update endpoint for offline mode
+7. IOL calculation SRK/T + Haigis, persistence
+8. Notifications + audit logging
+9. Tests for critical flows (auth, role access, state transitions, public status)
 
-### Admin Features
-- Access code displayed prominently in patient card
-- Copy-to-clipboard functionality
-- Direct links for Telegram and web access
-- Example: `/patient?code=a1b2c3d4`
+### Phase 3 — Docs (Scalar)
 
-## API Base URL
-`/api/v1/`
+- Generate OpenAPI via drf-spectacular.
+- Update Scalar docs from the OpenAPI file (single source).
+- Ensure endpoints/params/response schemas match actual implementation.
 
-## Public Endpoints (No Auth)
-- `POST /api/v1/auth/register` — user registration
-- `POST /api/v1/auth/login` — user login (email + password)
-- `POST /api/v1/auth/patient-login` — patient login by access code (returns JWT tokens)
-- `POST /api/v1/auth/telegram-token-login` — patient login via Telegram one-time token
-- `POST /api/v1/auth/refresh` — refresh access token
-- `GET /api/v1/patients/public/:accessCode` — patient status by code (no auth)
-- `GET /patient` — patient web interface
-- `GET /patient/login` — patient login page
-- `GET /patient/portal` — patient portal (requires auth)
-- `GET /admin` — admin panel UI
-- `GET /docs` — API documentation (Scalar)
+## Commands You Can Run
 
-## Protected Endpoints (Auth Required)
-All other endpoints require JWT token in `Authorization: Bearer <token>` header.
+- python manage.py check
+- python manage.py makemigrations
+- python manage.py migrate
+- python manage.py test
+- python manage.py spectacular --file openapi.json
+- pytest (if used)
+- celery worker/beat (only if needed for tests)
+- grep, head, find
 
-## Environment Variables
-Copy `.env.example` to `.env` and configure:
-- `DB_*` — PostgreSQL connection
-- `JWT_SECRET` — JWT signing key
-- `REDIS_*` — Redis connection
-- `MINIO_*` — Object storage (optional, falls back to local FS)
-- `TELEGRAM_BOT_TOKEN` — Telegram bot API token
+## Output Format Expectations
 
-## Module Structure
-- `cmd/api/` — Main server entrypoint
-- `cmd/seed/` — Seed test data (districts, users, patients)
-- `cmd/fix-access-codes/` — Utility to generate codes for existing patients
-- `internal/config/` — Config loading (Viper)
-- `internal/domain/` — All domain models and DTOs
-- `internal/handler/` — HTTP handlers + response helpers
-- `internal/middleware/` — Auth (JWT) + RBAC middleware
-- `internal/repository/` — Database repositories (interface-based)
-- `internal/service/` — Business logic services
-- `internal/service/formulas/` — IOL calculation formulas (SRK/T, Haigis, Hoffer Q)
-- `internal/server/` — Router + DI wiring + embedded HTML pages
-- `pkg/database/` — PostgreSQL + Redis connections
-- `pkg/storage/` — File storage abstraction (MinIO + local)
-- `pkg/telegram/` — Telegram bot with patient notifications
-- `pkg/logger/` — Zerolog setup
+- For any change: explain "why" in one sentence and show file diffs.
+- Always keep a running checklist of remaining gaps.
+- Do not produce long prose. Prefer bullet points and exact paths.
 
-## Telegram Bot Integration
+## Acceptance Criteria
 
-### Patient Commands
-- `/start <code>` — bind access code to chat
-- `/status` — view current preparation status
-- Receives automatic notifications on status changes
-
-### Doctor Commands
-- `/register <email>` — bind doctor account to Telegram
-- `/mypatients` — list assigned patients
-- Receives notifications about new patients and reviews
-
-### Notification Types
-- New patient assigned to doctor
-- Patient status changed
-- Checklist ready for surgeon review
-- Surgery scheduled
+- All required endpoints exist and enforce permissions exactly as spec.
+- OpenAPI schema matches reality and includes security schemes.
+- Scalar docs are updated and render without errors.
+- Minimal but meaningful tests are green.

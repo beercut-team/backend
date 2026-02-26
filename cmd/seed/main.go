@@ -76,6 +76,7 @@ func main() {
 	// --- Seed Users ---
 	hash, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
 	adminHash, _ := bcrypt.GenerateFromPassword([]byte("123123123"), bcrypt.DefaultCost)
+	testHash, _ := bcrypt.GenerateFromPassword([]byte("testpass123"), bcrypt.DefaultCost)
 
 	users := []domain.User{
 		{
@@ -106,6 +107,24 @@ func main() {
 			FirstName: "Админ", LastName: "Панель", MiddleName: "",
 			Phone: "+79001234571", Role: domain.RoleAdmin, IsActive: true,
 		},
+		// Test users for automated testing
+		{
+			Email: "surgeon@test.com", PasswordHash: string(testHash), Name: "Test Surgeon",
+			FirstName: "Test", LastName: "Surgeon", MiddleName: "",
+			Phone: "+79991234567", Role: domain.RoleSurgeon,
+			Specialization: "Хирург-офтальмолог", LicenseNumber: "TEST-001", IsActive: true,
+		},
+		{
+			Email: "doctor@test.com", PasswordHash: string(testHash), Name: "Test Doctor",
+			FirstName: "Test", LastName: "Doctor", MiddleName: "",
+			Phone: "+79991234568", Role: domain.RoleDistrictDoctor,
+			DistrictID: &districts[0].ID, Specialization: "Офтальмолог", IsActive: true,
+		},
+		{
+			Email: "call@test.com", PasswordHash: string(testHash), Name: "Test Call Center",
+			FirstName: "Test", LastName: "CallCenter", MiddleName: "",
+			Phone: "+79991234569", Role: domain.RoleCallCenter, IsActive: true,
+		},
 	}
 
 	for i := range users {
@@ -122,13 +141,13 @@ func main() {
 			AccessCode: "a1b2c3d4", FirstName: "Туяра", LastName: "Алексеева", MiddleName: "Петровна",
 			Phone: "+79009876543", Diagnosis: "Катаракта правого глаза, начальная стадия",
 			OperationType: domain.OperationPhacoemulsification, Eye: "OD",
-			Status: domain.PatientStatusPreparation, DoctorID: users[0].ID, DistrictID: districts[0].ID,
+			Status: domain.PatientStatusInProgress, DoctorID: users[0].ID, DistrictID: districts[0].ID,
 		},
 		{
 			AccessCode: "e5f6g7h8", FirstName: "Айаал", LastName: "Степанов", MiddleName: "Николаевич",
 			Phone: "+79009876544", Diagnosis: "Открытоугольная глаукома II стадии",
 			OperationType: domain.OperationAntiglaucoma, Eye: "OS",
-			Status: domain.PatientStatusReviewNeeded, DoctorID: users[0].ID, DistrictID: districts[0].ID,
+			Status: domain.PatientStatusPendingReview, DoctorID: users[0].ID, DistrictID: districts[0].ID,
 			SurgeonID: &users[2].ID,
 		},
 		{

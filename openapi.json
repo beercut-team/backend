@@ -588,13 +588,14 @@
             "schema": {
               "type": "string",
               "enum": [
-                "NEW",
-                "PREPARATION",
-                "REVIEW_NEEDED",
+                "DRAFT",
+                "IN_PROGRESS",
+                "PENDING_REVIEW",
                 "APPROVED",
-                "SURGERY_SCHEDULED",
+                "NEEDS_CORRECTION",
+                "SCHEDULED",
                 "COMPLETED",
-                "REJECTED"
+                "CANCELLED"
               ]
             }
           },
@@ -690,7 +691,7 @@
         }
       }
     },
-    "/api/v1/patients/public/{accessCode}": {
+    "/api/public/status/{code}": {
       "get": {
         "tags": [
           "Patients"
@@ -698,7 +699,7 @@
         "summary": "Публичный статус пациента (без авторизации)",
         "parameters": [
           {
-            "name": "accessCode",
+            "name": "code",
             "in": "path",
             "required": true,
             "schema": {
@@ -837,6 +838,58 @@
           },
           "400": {
             "description": "Ошибка"
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{id}/batch-update": {
+      "post": {
+        "tags": [
+          "Patients"
+        ],
+        "summary": "Пакетное обновление пациента (для оффлайн-режима)",
+        "description": "Атомарное обновление данных пациента, статуса и чек-листа с обнаружением конфликтов",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Пакетное обновление выполнено",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchUpdateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка валидации"
+          },
+          "409": {
+            "description": "Конфликт данных (timestamp устарел)"
           }
         }
       }
@@ -2376,13 +2429,14 @@
           "status": {
             "type": "string",
             "enum": [
-              "NEW",
-              "PREPARATION",
-              "REVIEW_NEEDED",
+              "DRAFT",
+              "IN_PROGRESS",
+              "PENDING_REVIEW",
               "APPROVED",
-              "SURGERY_SCHEDULED",
+              "NEEDS_CORRECTION",
+              "SCHEDULED",
               "COMPLETED",
-              "REJECTED"
+              "CANCELLED"
             ]
           },
           "doctor_id": {
@@ -2534,13 +2588,14 @@
           "status": {
             "type": "string",
             "enum": [
-              "NEW",
-              "PREPARATION",
-              "REVIEW_NEEDED",
+              "DRAFT",
+              "IN_PROGRESS",
+              "PENDING_REVIEW",
               "APPROVED",
-              "SURGERY_SCHEDULED",
+              "NEEDS_CORRECTION",
+              "SCHEDULED",
               "COMPLETED",
-              "REJECTED"
+              "CANCELLED"
             ]
           },
           "comment": {
@@ -2600,6 +2655,115 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "BatchUpdateRequest": {
+        "type": "object",
+        "required": [
+          "timestamp"
+        ],
+        "properties": {
+          "patient": {
+            "type": "object",
+            "description": "Поля пациента для обновления",
+            "properties": {
+              "diagnosis": {
+                "type": "string"
+              },
+              "notes": {
+                "type": "string"
+              },
+              "phone": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            }
+          },
+          "status": {
+            "type": "object",
+            "description": "Новый статус пациента",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "DRAFT",
+                  "IN_PROGRESS",
+                  "PENDING_REVIEW",
+                  "APPROVED",
+                  "NEEDS_CORRECTION",
+                  "SCHEDULED",
+                  "COMPLETED",
+                  "CANCELLED"
+                ]
+              },
+              "comment": {
+                "type": "string"
+              }
+            }
+          },
+          "checklist": {
+            "type": "array",
+            "description": "Обновления чек-листа",
+            "items": {
+              "type": "object",
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "PENDING",
+                    "IN_PROGRESS",
+                    "COMPLETED",
+                    "REJECTED",
+                    "EXPIRED"
+                  ]
+                },
+                "result": {
+                  "type": "string"
+                },
+                "notes": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp последнего известного состояния для обнаружения конфликтов"
+          }
+        }
+      },
+      "BatchUpdateResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/Patient"
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Список обнаруженных конфликтов"
+          },
+          "updated_items": {
+            "type": "integer",
+            "description": "Количество обновлённых элементов"
+          },
+          "message": {
+            "type": "string"
           }
         }
       },

@@ -53,7 +53,7 @@ func (h *PatientHandler) GetByID(c *gin.Context) {
 }
 
 func (h *PatientHandler) GetPublic(c *gin.Context) {
-	code := c.Param("accessCode")
+	code := c.Param("code")
 	resp, err := h.svc.GetByAccessCode(c.Request.Context(), code)
 	if err != nil {
 		NotFound(c, err.Error())
@@ -82,11 +82,11 @@ func (h *PatientHandler) List(c *gin.Context) {
 		filters.DoctorID = &userID
 	case domain.RoleSurgeon:
 		filters.MinStatus = []domain.PatientStatus{
-			domain.PatientStatusReviewNeeded,
+			domain.PatientStatusPendingReview,
 			domain.PatientStatusApproved,
-			domain.PatientStatusSurgeryScheduled,
+			domain.PatientStatusScheduled,
 			domain.PatientStatusCompleted,
-			domain.PatientStatusRejected,
+			domain.PatientStatusNeedsCorrection,
 		}
 	}
 
@@ -190,4 +190,31 @@ func (h *PatientHandler) RegenerateAccessCode(c *gin.Context) {
 	}
 
 	Success(c, http.StatusOK, patient)
+}
+
+func (h *PatientHandler) BatchUpdate(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		BadRequest(c, "неверный id")
+		return
+	}
+
+	var req domain.BatchUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		BadRequest(c, err.Error())
+		return
+	}
+
+	userID := middleware.GetUserID(c)
+	response, err := h.svc.BatchUpdate(c.Request.Context(), uint(id), req, userID)
+	if err != nil {
+		Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if response.Success {
+		Success(c, http.StatusOK, response)
+	} else {
+		Success(c, http.StatusPartialContent, response)
+	}
 }

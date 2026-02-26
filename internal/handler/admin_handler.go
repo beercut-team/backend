@@ -35,9 +35,9 @@ func (h *AdminHandler) Stats(c *gin.Context) {
 	h.db.Model(&domain.Surgery{}).Count(&surgeriesCount)
 
 	c.JSON(http.StatusOK, gin.H{
-		"users":      usersCount,
-		"patients":   patientsCount,
-		"districts":  districtsCount,
-		"surgeries":  surgeriesCount,
+		"users":     usersCount,
+		"patients":  patientsCount,
+		"districts": districtsCount,
+		"surgeries": surgeriesCount,
 	})
 }

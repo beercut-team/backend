@@ -136,12 +136,12 @@ func (s *checklistService) CheckAndTransition(ctx context.Context, patientID uin
 		if err != nil {
 			return err
 		}
-		if p.Status == domain.PatientStatusPreparation {
-			s.patientRepo.UpdateStatus(ctx, patientID, domain.PatientStatusReviewNeeded)
+		if p.Status == domain.PatientStatusInProgress {
+			s.patientRepo.UpdateStatus(ctx, patientID, domain.PatientStatusPendingReview)
 			s.patientRepo.CreateStatusHistory(ctx, &domain.PatientStatusHistory{
 				PatientID:  patientID,
-				FromStatus: domain.PatientStatusPreparation,
-				ToStatus:   domain.PatientStatusReviewNeeded,
+				FromStatus: domain.PatientStatusInProgress,
+				ToStatus:   domain.PatientStatusPendingReview,
 				Comment:    "Все обязательные пункты чек-листа выполнены",
 			})
 		}

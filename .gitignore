@@ -1,3 +1,10 @@
 .env
 tmp/
 api
+seed
+reset-db
+fix-access-codes
+uploads/*
+!uploads/.gitkeep
+.DS_Store
+*.log

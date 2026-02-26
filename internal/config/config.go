@@ -38,7 +38,7 @@ type Config struct {
 	BaseURL string `mapstructure:"BASE_URL"`
 
 	// Storage mode: "minio" or "local"
-	StorageMode string `mapstructure:"STORAGE_MODE"`
+	StorageMode     string `mapstructure:"STORAGE_MODE"`
 	LocalUploadPath string `mapstructure:"LOCAL_UPLOAD_PATH"`
 }
 

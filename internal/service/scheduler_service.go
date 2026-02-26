@@ -11,11 +11,11 @@ import (
 )
 
 type SchedulerService struct {
-	cron            *cron.Cron
-	checklistRepo   repository.ChecklistRepository
-	surgeryRepo     repository.SurgeryRepository
-	notifRepo       repository.NotificationRepository
-	mediaRepo       repository.MediaRepository
+	cron          *cron.Cron
+	checklistRepo repository.ChecklistRepository
+	surgeryRepo   repository.SurgeryRepository
+	notifRepo     repository.NotificationRepository
+	mediaRepo     repository.MediaRepository
 }
 
 func NewSchedulerService(

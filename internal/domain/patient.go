@@ -9,13 +9,14 @@ import (
 type PatientStatus string
 
 const (
-	PatientStatusNew              PatientStatus = "NEW"
-	PatientStatusPreparation      PatientStatus = "PREPARATION"
-	PatientStatusReviewNeeded     PatientStatus = "REVIEW_NEEDED"
-	PatientStatusApproved         PatientStatus = "APPROVED"
-	PatientStatusSurgeryScheduled PatientStatus = "SURGERY_SCHEDULED"
-	PatientStatusCompleted        PatientStatus = "COMPLETED"
-	PatientStatusRejected         PatientStatus = "REJECTED"
+	PatientStatusDraft           PatientStatus = "DRAFT"
+	PatientStatusInProgress      PatientStatus = "IN_PROGRESS"
+	PatientStatusPendingReview   PatientStatus = "PENDING_REVIEW"
+	PatientStatusApproved        PatientStatus = "APPROVED"
+	PatientStatusNeedsCorrection PatientStatus = "NEEDS_CORRECTION"
+	PatientStatusScheduled       PatientStatus = "SCHEDULED"
+	PatientStatusCompleted       PatientStatus = "COMPLETED"
+	PatientStatusCancelled       PatientStatus = "CANCELLED"
 )
 
 type OperationType string
@@ -43,7 +44,7 @@ type Patient struct {
 	Diagnosis      string        `gorm:"type:text" json:"diagnosis"`
 	OperationType  OperationType `gorm:"type:varchar(30);not null" json:"operation_type"`
 	Eye            string        `gorm:"type:varchar(5)" json:"eye"` // OD, OS, OU
-	Status         PatientStatus `gorm:"type:varchar(30);default:'NEW';not null;index" json:"status"`
+	Status         PatientStatus `gorm:"type:varchar(30);default:'DRAFT';not null;index" json:"status"`
 	DoctorID       uint          `gorm:"index;not null" json:"doctor_id"`
 	Doctor         *User         `gorm:"foreignKey:DoctorID" json:"doctor,omitempty"`
 	SurgeonID      *uint         `gorm:"index" json:"surgeon_id"`
@@ -70,6 +71,57 @@ func GenerateAccessCode() string {
 	b := make([]byte, 4)
 	rand.Read(b)
 	return hex.EncodeToString(b)
+}
+
+// ValidateStatusTransition проверяет допустимость перехода между статусами
+func ValidateStatusTransition(from, to PatientStatus) bool {
+	// Можно отменить из любого статуса
+	if to == PatientStatusCancelled {
+		return true
+	}
+
+	// Определяем допустимые переходы
+	validTransitions := map[PatientStatus][]PatientStatus{
+		PatientStatusDraft:           {PatientStatusInProgress, PatientStatusCancelled},
+		PatientStatusInProgress:      {PatientStatusPendingReview, PatientStatusCancelled},
+		PatientStatusPendingReview:   {PatientStatusApproved, PatientStatusNeedsCorrection, PatientStatusCancelled},
+		PatientStatusNeedsCorrection: {PatientStatusInProgress, PatientStatusCancelled},
+		PatientStatusApproved:        {PatientStatusScheduled, PatientStatusCancelled},
+		PatientStatusScheduled:       {PatientStatusCompleted, PatientStatusCancelled},
+		PatientStatusCompleted:       {}, // Финальный статус
+		PatientStatusCancelled:       {}, // Финальный статус
+	}
+
+	allowedStatuses, exists := validTransitions[from]
+	if !exists {
+		return false
+	}
+
+	for _, allowed := range allowedStatuses {
+		if allowed == to {
+			return true
+		}
+	}
+
+	return false
+}
+
+// GetStatusDisplayName возвращает человекочитаемое название статуса
+func GetStatusDisplayName(status PatientStatus) string {
+	names := map[PatientStatus]string{
+		PatientStatusDraft:           "Черновик",
+		PatientStatusInProgress:      "В процессе подготовки",
+		PatientStatusPendingReview:   "Ожидает проверки хирурга",
+		PatientStatusApproved:        "Одобрено, готов к операции",
+		PatientStatusNeedsCorrection: "Требуется доработка",
+		PatientStatusScheduled:       "Операция запланирована",
+		PatientStatusCompleted:       "Операция завершена",
+		PatientStatusCancelled:       "Отменено",
+	}
+	if name, ok := names[status]; ok {
+		return name
+	}
+	return string(status)
 }
 
 // --- Requests ---
@@ -111,6 +163,28 @@ type UpdatePatientRequest struct {
 type PatientStatusRequest struct {
 	Status  PatientStatus `json:"status" binding:"required"`
 	Comment string        `json:"comment"`
+}
+
+type BatchUpdateRequest struct {
+	Patient   *UpdatePatientRequest  `json:"patient"`
+	Status    *PatientStatusRequest  `json:"status"`
+	Checklist []ChecklistItemUpdate  `json:"checklist"`
+	Timestamp string                 `json:"timestamp"` // ISO8601 timestamp from client
+}
+
+type ChecklistItemUpdate struct {
+	ID     uint    `json:"id" binding:"required"`
+	Status *string `json:"status"`
+	Result *string `json:"result"`
+	Notes  *string `json:"notes"`
+}
+
+type BatchUpdateResponse struct {
+	Success      bool                   `json:"success"`
+	Patient      *Patient               `json:"patient,omitempty"`
+	Conflicts    []string               `json:"conflicts,omitempty"`
+	UpdatedItems int                    `json:"updated_items"`
+	Message      string                 `json:"message"`
 }
 
 type PatientPublicResponse struct {

@@ -3,10 +3,10 @@ package handler
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/beercut-team/backend-boilerplate/internal/domain"
 	"github.com/beercut-team/backend-boilerplate/internal/middleware"
 	"github.com/beercut-team/backend-boilerplate/internal/service"
+	"github.com/gin-gonic/gin"
 )
 
 type AuthHandler struct {

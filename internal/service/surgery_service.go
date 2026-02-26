@@ -67,11 +67,11 @@ func (s *surgeryService) Schedule(ctx context.Context, req domain.CreateSurgeryR
 	}
 
 	// Auto-transition patient
-	s.patientRepo.UpdateStatus(ctx, req.PatientID, domain.PatientStatusSurgeryScheduled)
+	s.patientRepo.UpdateStatus(ctx, req.PatientID, domain.PatientStatusScheduled)
 	s.patientRepo.CreateStatusHistory(ctx, &domain.PatientStatusHistory{
 		PatientID:  req.PatientID,
 		FromStatus: patient.Status,
-		ToStatus:   domain.PatientStatusSurgeryScheduled,
+		ToStatus:   domain.PatientStatusScheduled,
 		ChangedBy:  surgeonID,
 		Comment:    "Операция запланирована на " + req.ScheduledDate,
 	})
@@ -161,7 +161,7 @@ func (s *surgeryService) Delete(ctx context.Context, id uint, deletedBy uint) er
 	}
 
 	// Revert patient status to APPROVED if surgery was scheduled
-	if surgery.Status == domain.SurgeryStatusScheduled && patient.Status == domain.PatientStatusSurgeryScheduled {
+	if surgery.Status == domain.SurgeryStatusScheduled && patient.Status == domain.PatientStatusScheduled {
 		s.patientRepo.UpdateStatus(ctx, surgery.PatientID, domain.PatientStatusApproved)
 		s.patientRepo.CreateStatusHistory(ctx, &domain.PatientStatusHistory{
 			PatientID:  surgery.PatientID,

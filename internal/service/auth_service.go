@@ -22,10 +22,10 @@ type AuthService interface {
 }
 
 type authService struct {
-	userRepo       repository.UserRepository
-	patientRepo    repository.PatientRepository
-	tokenRepo      repository.TelegramTokenRepository
-	tokenService   TokenService
+	userRepo     repository.UserRepository
+	patientRepo  repository.PatientRepository
+	tokenRepo    repository.TelegramTokenRepository
+	tokenService TokenService
 }
 
 func NewAuthService(userRepo repository.UserRepository, tokenService TokenService) AuthService {

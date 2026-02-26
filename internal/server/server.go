@@ -39,7 +39,6 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	telegramRepo := repository.NewTelegramRepository(db)
 	telegramTokenRepo := repository.NewTelegramTokenRepository(db)
 	syncRepo := repository.NewSyncRepository(db)
-	_ = auditRepo
 
 	// --- Storage ---
 	var store storage.Storage
@@ -64,10 +63,11 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	}
 
 	// --- Services ---
+	auditService := service.NewAuditService(auditRepo)
 	tokenService := service.NewTokenService(cfg)
 	authService := service.NewAuthServiceWithPatient(userRepo, patientRepo, telegramTokenRepo, tokenService)
 	districtService := service.NewDistrictService(districtRepo)
-	patientService := service.NewPatientService(patientRepo, checklistRepo, notifRepo, bot)
+	patientService := service.NewPatientService(db, patientRepo, checklistRepo, notifRepo, bot)
 	checklistService := service.NewChecklistService(checklistRepo, patientRepo)
 	mediaService := service.NewMediaService(mediaRepo, store)
 	iolService := service.NewIOLService(iolRepo)
@@ -122,6 +122,12 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		c.String(200, patientPortalHTML)
 	})
 
+	// Public endpoints (no auth required)
+	publicAPI := r.Group("/api/public")
+	{
+		publicAPI.GET("/status/:code", patientHandler.GetPublic)
+	}
+
 	api := r.Group("/api/v1")
 	{
 		// Public auth routes
@@ -134,12 +140,10 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 			auth.POST("/refresh", authHandler.Refresh)
 		}
 
-		// Public patient status
-		api.GET("/patients/public/:accessCode", patientHandler.GetPublic)
-
 		// Protected routes
 		protected := api.Group("")
 		protected.Use(middleware.Auth(tokenService))
+		protected.Use(middleware.AuditMiddleware(auditService))
 		{
 			// Auth
 			protected.GET("/auth/me", authHandler.Me)
@@ -173,6 +177,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 				patients.PATCH("/:id", patientHandler.Update)
 				patients.DELETE("/:id", middleware.RequireRole(domain.RoleAdmin), patientHandler.Delete)
 				patients.POST("/:id/status", patientHandler.ChangeStatus)
+				patients.POST("/:id/batch-update", patientHandler.BatchUpdate)
 				patients.POST("/:id/regenerate-code", middleware.RequireRole(domain.RoleAdmin), patientHandler.RegenerateAccessCode)
 			}
 
