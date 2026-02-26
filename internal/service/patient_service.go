@@ -164,6 +164,10 @@ func (s *patientService) Update(ctx context.Context, id uint, req domain.UpdateP
 		return nil, err
 	}
 
+	// Track changes for notifications
+	diagnosisChanged := false
+	oldDiagnosis := p.Diagnosis
+
 	if req.FirstName != nil {
 		p.FirstName = *req.FirstName
 	}
@@ -182,8 +186,9 @@ func (s *patientService) Update(ctx context.Context, id uint, req domain.UpdateP
 	if req.Address != nil {
 		p.Address = *req.Address
 	}
-	if req.Diagnosis != nil {
+	if req.Diagnosis != nil && *req.Diagnosis != oldDiagnosis {
 		p.Diagnosis = *req.Diagnosis
+		diagnosisChanged = true
 	}
 	if req.Notes != nil {
 		p.Notes = *req.Notes
@@ -204,6 +209,19 @@ func (s *patientService) Update(ctx context.Context, id uint, req domain.UpdateP
 	if err := s.repo.Update(ctx, p); err != nil {
 		return nil, errors.New("не удалось обновить данные пациента")
 	}
+
+	// Создать уведомление при изменении диагноза
+	if diagnosisChanged && s.notifRepo != nil && p.Diagnosis != "" {
+		s.notifRepo.Create(ctx, &domain.Notification{
+			UserID:     id,
+			Type:       domain.NotifStatusChange, // Используем существующий тип
+			Title:      "Установлен диагноз",
+			Body:       "Ваш диагноз: " + p.Diagnosis,
+			EntityType: "patient",
+			EntityID:   id,
+		})
+	}
+
 	return p, nil
 }
 
