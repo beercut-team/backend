@@ -260,9 +260,9 @@ const { data: progress } = await progressResponse.json();
 // progress = { completed_count: 10, total_count: 15, percentage: 66.67 }
 ```
 
-**Добавление пунктов в чек-лист (только для районного врача):**
+**Добавление пунктов в чек-лист (районный врач или хирург):**
 ```javascript
-// Врач может добавить дополнительные обследования к стандартному чек-листу
+// Врач или хирург может добавить дополнительные обследования к стандартному чек-листу
 async function addChecklistItem(patientId, itemData) {
   const response = await fetchWithAuth('http://localhost:8080/api/v1/checklists', {
     method: 'POST',
