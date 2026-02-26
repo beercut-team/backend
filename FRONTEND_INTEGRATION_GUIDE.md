@@ -36,7 +36,8 @@ const registerResponse = await fetch('http://localhost:8080/api/v1/auth/register
     first_name: 'Иван',
     last_name: 'Иванов',
     phone: '+79991234567',
-    role: 'DISTRICT_DOCTOR'
+    role: 'DISTRICT_DOCTOR',
+    district_id: 1  // ОБЯЗАТЕЛЬНО: ID района
   })
 });
 

@@ -44,6 +44,7 @@ type RegisterRequest struct {
 	MiddleName string `json:"middle_name"`
 	Phone      string `json:"phone"`
 	Role       Role   `json:"role"`
+	DistrictID uint   `json:"district_id" binding:"required"`
 }
 
 type LoginRequest struct {

@@ -2524,7 +2524,8 @@
         "required": [
           "email",
           "password",
-          "name"
+          "name",
+          "district_id"
         ],
         "properties": {
           "email": {
@@ -2568,6 +2569,11 @@
               "ADMIN"
             ],
             "default": "PATIENT"
+          },
+          "district_id": {
+            "type": "integer",
+            "example": 1,
+            "description": "ID района (обязательно для всех пользователей)"
           }
         }
       },

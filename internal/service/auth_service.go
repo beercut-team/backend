@@ -72,6 +72,7 @@ func (s *authService) Register(ctx context.Context, req domain.RegisterRequest) 
 		MiddleName:   req.MiddleName,
 		Phone:        req.Phone,
 		Role:         role,
+		DistrictID:   &req.DistrictID,
 		IsActive:     true,
 	}
 
