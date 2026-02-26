@@ -244,12 +244,12 @@ func (s *patientService) ChangeStatus(ctx context.Context, id uint, req domain.P
 		Comment:    req.Comment,
 	})
 
-	// Создать уведомление для врача о смене статуса
-	if s.notifRepo != nil && p.DoctorID != 0 {
+	// Создать уведомление для пациента о смене статуса
+	if s.notifRepo != nil {
 		statusText := map[domain.PatientStatus]string{
 			domain.PatientStatusNew:              "Новый пациент",
-			domain.PatientStatusPreparation:      "Идёт подготовка",
-			domain.PatientStatusReviewNeeded:     "Требуется проверка",
+			domain.PatientStatusPreparation:      "На подготовке",
+			domain.PatientStatusReviewNeeded:     "Отправлено на проверку хирургу",
 			domain.PatientStatusApproved:         "Готов к операции",
 			domain.PatientStatusSurgeryScheduled: "Операция запланирована",
 			domain.PatientStatusCompleted:        "Операция завершена",
@@ -257,10 +257,10 @@ func (s *patientService) ChangeStatus(ctx context.Context, id uint, req domain.P
 		}[req.Status]
 
 		s.notifRepo.Create(ctx, &domain.Notification{
-			UserID:     p.DoctorID,
+			UserID:     id, // ID пациента, не врача!
 			Type:       domain.NotifStatusChange,
-			Title:      "Изменение статуса пациента",
-			Body:       p.LastName + " " + p.FirstName + " — " + statusText,
+			Title:      "Статус изменен",
+			Body:       "Ваш статус изменен на: " + statusText,
 			EntityType: "patient",
 			EntityID:   id,
 		})

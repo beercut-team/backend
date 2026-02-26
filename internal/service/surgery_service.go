@@ -81,13 +81,13 @@ func (s *surgeryService) Schedule(ctx context.Context, req domain.CreateSurgeryR
 	patient.SurgeonID = &surgeonID
 	s.patientRepo.Update(ctx, patient)
 
-	// Создать уведомление для врача о запланированной операции
-	if s.notifRepo != nil && patient.DoctorID != 0 {
+	// Создать уведомление для пациента о запланированной операции
+	if s.notifRepo != nil {
 		s.notifRepo.Create(ctx, &domain.Notification{
-			UserID:     patient.DoctorID,
+			UserID:     surgery.PatientID, // ID пациента
 			Type:       domain.NotifSurgeryScheduled,
 			Title:      "Операция запланирована",
-			Body:       patient.LastName + " " + patient.FirstName + " — " + date.Format("02.01.2006"),
+			Body:       "Ваша операция назначена на " + date.Format("02.01.2006"),
 			EntityType: "surgery",
 			EntityID:   surgery.ID,
 		})
