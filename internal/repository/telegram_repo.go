@@ -9,6 +9,7 @@ import (
 
 type TelegramRepository interface {
 	Create(ctx context.Context, binding *domain.TelegramBinding) error
+	UpdateOrCreate(ctx context.Context, binding *domain.TelegramBinding) error
 	FindByChatID(ctx context.Context, chatID int64) (*domain.TelegramBinding, error)
 	FindByPatientID(ctx context.Context, patientID uint) (*domain.TelegramBinding, error)
 	Delete(ctx context.Context, chatID int64) error
@@ -24,6 +25,29 @@ func NewTelegramRepository(db *gorm.DB) TelegramRepository {
 
 func (r *telegramRepository) Create(ctx context.Context, binding *domain.TelegramBinding) error {
 	return r.db.WithContext(ctx).Create(binding).Error
+}
+
+func (r *telegramRepository) UpdateOrCreate(ctx context.Context, binding *domain.TelegramBinding) error {
+	// Try to find existing binding by chat_id (including inactive ones)
+	var existing domain.TelegramBinding
+	err := r.db.WithContext(ctx).Where("chat_id = ?", binding.ChatID).First(&existing).Error
+
+	if err == nil {
+		// Record exists - update it
+		return r.db.WithContext(ctx).Model(&existing).Updates(map[string]interface{}{
+			"patient_id":  binding.PatientID,
+			"access_code": binding.AccessCode,
+			"is_active":   true,
+		}).Error
+	}
+
+	if err == gorm.ErrRecordNotFound {
+		// Record doesn't exist - create new one
+		return r.db.WithContext(ctx).Create(binding).Error
+	}
+
+	// Other error
+	return err
 }
 
 func (r *telegramRepository) FindByChatID(ctx context.Context, chatID int64) (*domain.TelegramBinding, error) {

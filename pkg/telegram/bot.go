@@ -138,10 +138,6 @@ func (b *Bot) handleStart(ctx context.Context, msg *tgbotapi.Message) {
 	// Check if already bound - if so, deactivate old binding
 	existing, _ := b.telegramRepo.FindByChatID(ctx, msg.Chat.ID)
 	if existing != nil {
-		// Deactivate old binding
-		if err := b.telegramRepo.Delete(ctx, msg.Chat.ID); err != nil {
-			log.Error().Err(err).Msg("Не удалось деактивировать старую привязку")
-		}
 		log.Info().Uint("old_patient_id", existing.PatientID).Uint("new_patient_id", patient.ID).Msg("Перепривязка чата")
 	}
 
@@ -152,8 +148,9 @@ func (b *Bot) handleStart(ctx context.Context, msg *tgbotapi.Message) {
 		IsActive:   true,
 	}
 
-	if err := b.telegramRepo.Create(ctx, binding); err != nil {
-		log.Error().Err(err).Msg("Не удалось создать привязку")
+	// Use UpdateOrCreate to handle both new bindings and rebindings
+	if err := b.telegramRepo.UpdateOrCreate(ctx, binding); err != nil {
+		log.Error().Err(err).Msg("Не удалось создать/обновить привязку")
 		b.sendMessage(msg.Chat.ID, fmt.Sprintf("Не удалось привязать: %v", err))
 		return
 	}
