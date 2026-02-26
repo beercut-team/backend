@@ -92,17 +92,34 @@ const roleNames = {
     'PATIENT': 'Пациент'
 };
 
+const statusNames = {
+    'NEW': 'Новый',
+    'IN_PROGRESS': 'В процессе подготовки',
+    'PENDING_REVIEW': 'Ожидает проверки хирурга',
+    'APPROVED': 'Одобрено, готов к операции',
+    'NEEDS_CORRECTION': 'Требуется доработка',
+    'SCHEDULED': 'Операция запланирована',
+    'COMPLETED': 'Операция завершена',
+    'CANCELLED': 'Отменено'
+};
+
 const statusColors = {
     'NEW': 'status-yellow',
-    'PREPARATION': 'status-yellow',
-    'REVIEW_NEEDED': 'status-yellow',
+    'IN_PROGRESS': 'status-yellow',
+    'PENDING_REVIEW': 'status-yellow',
     'APPROVED': 'status-green',
-    'REJECTED': 'status-red',
-    'SCHEDULED': 'status-green'
+    'NEEDS_CORRECTION': 'status-red',
+    'SCHEDULED': 'status-green',
+    'COMPLETED': 'status-green',
+    'CANCELLED': 'status-red'
 };
 
 function getRoleName(role) {
     return roleNames[role] || role;
+}
+
+function getStatusName(status) {
+    return statusNames[status] || status;
 }
 
 function getStatusColor(status) {
@@ -696,9 +713,191 @@ async function showPatientDetails(id) {
         const dob = patient.date_of_birth ? new Date(patient.date_of_birth).toLocaleDateString('ru-RU') : '—';
 
         modal.innerHTML = ` + "`" + `
-        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 flex justify-between items-center rounded-t-2xl">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 flex justify-between items-center">
                 <h2 class="text-2xl font-bold">Карта пациента #${safe(patient.id)}</h2>
+                <button onclick="closePatientModal()" class="text-white hover:text-gray-200 text-3xl leading-none">&times;</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto">
+                <div class="p-6 space-y-6">
+                    <!-- Код доступа и статус -->
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4">
+                            <div class="text-sm text-gray-600 mb-1">🔑 Код доступа</div>
+                            <div class="text-3xl font-mono font-bold text-green-700">${safe(patient.access_code, 'Не задан')}</div>
+                            <div class="text-xs text-gray-500 mt-2">Telegram: /start ${safe(patient.access_code)}</div>
+                            <button onclick="copyAccessCode('${safe(patient.access_code)}')" class="mt-3 bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                                📋 Копировать
+                            </button>
+                        </div>
+
+                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-4">
+                            <div class="text-sm text-gray-600 mb-1">📊 Статус</div>
+                            <div class="text-2xl font-bold text-blue-700 mb-2">${getStatusName(patient.status)}</div>
+                            <div class="text-sm text-gray-600">Прогресс: ${completedItems}/${totalItems} (${progress}%)</div>
+                            <div class="mt-2 bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full transition-all" style="width: ${progress}%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Вкладки -->
+                    <div class="border-b border-gray-200">
+                        <div class="flex gap-4">
+                            <button onclick="switchModalTab('personal')" id="tab-personal" class="px-4 py-2 font-medium border-b-2 tab-active">
+                                👤 Личные данные
+                            </button>
+                            <button onclick="switchModalTab('medical')" id="tab-medical" class="px-4 py-2 font-medium text-gray-600 hover:text-blue-600 border-b-2 border-transparent">
+                                🏥 Медицинская информация
+                            </button>
+                            <button onclick="switchModalTab('checklist')" id="tab-checklist" class="px-4 py-2 font-medium text-gray-600 hover:text-blue-600 border-b-2 border-transparent">
+                                ✓ Чек-лист (${completedItems}/${totalItems})
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Контент вкладок -->
+                    <div id="modal-tab-content">
+                        <!-- Личные данные -->
+                        <div id="content-personal" class="space-y-4">
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <div class="bg-gray-50 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-700 mb-3">Основная информация</h4>
+                                    <div class="space-y-2 text-sm">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Фамилия:</span>
+                                            <span class="font-medium">${safe(patient.last_name)}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Имя:</span>
+                                            <span class="font-medium">${safe(patient.first_name)}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Отчество:</span>
+                                            <span class="font-medium">${safe(patient.middle_name)}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Дата рождения:</span>
+                                            <span class="font-medium">${dob}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Пол:</span>
+                                            <span class="font-medium">${safe(patient.gender)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-gray-50 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-700 mb-3">Контакты</h4>
+                                    <div class="space-y-2 text-sm">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Телефон:</span>
+                                            <span class="font-medium">${formatPhone(patient.phone)}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Email:</span>
+                                            <span class="font-medium">${safe(patient.email)}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Район:</span>
+                                            <span class="font-medium">${patient.district ? safe(patient.district.name) : '—'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <h4 class="font-semibold text-gray-700 mb-3">Документы</h4>
+                                <div class="grid md:grid-cols-2 gap-4 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">СНИЛС:</span>
+                                        <span class="font-medium">${safe(patient.snils)}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Паспорт:</span>
+                                        <span class="font-medium">${safe(patient.passport_series)} ${safe(patient.passport_number)}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Полис ОМС:</span>
+                                        <span class="font-medium">${safe(patient.oms_policy || patient.policy_number)}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            ${patient.address ? ` + "`" + `
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <h4 class="font-semibold text-gray-700 mb-2">Адрес</h4>
+                                <p class="text-sm">${safe(patient.address)}</p>
+                            </div>
+                            ` + "`" + ` : ''}
+                        </div>
+
+                        <!-- Медицинская информация -->
+                        <div id="content-medical" class="space-y-4 hidden">
+                            <div class="bg-blue-50 rounded-lg p-4">
+                                <h4 class="font-semibold text-gray-700 mb-3">Операция</h4>
+                                <div class="grid md:grid-cols-2 gap-4 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Диагноз:</span>
+                                        <span class="font-medium">${safe(patient.diagnosis)}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Тип операции:</span>
+                                        <span class="font-medium">${safe(patient.operation_type)}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Глаз:</span>
+                                        <span class="font-medium">${safe(patient.eye)}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Дата операции:</span>
+                                        <span class="font-medium">${surgeryDate}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            ${patient.notes ? ` + "`" + `
+                            <div class="bg-yellow-50 rounded-lg p-4">
+                                <h4 class="font-semibold text-gray-700 mb-2">Заметки врача</h4>
+                                <p class="text-sm whitespace-pre-wrap">${safe(patient.notes)}</p>
+                            </div>
+                            ` + "`" + ` : ''}
+                        </div>
+
+                        <!-- Чек-лист -->
+                        <div id="content-checklist" class="hidden">
+                            ${checklistItems.length > 0 ? ` + "`" + `
+                            <div class="space-y-2">
+                                ${checklistItems.map(item => {
+                                    const statusIcon = item.status === 'COMPLETED' ? '✅' : item.status === 'PENDING' ? '⏳' : '❌';
+                                    const statusColor = item.status === 'COMPLETED' ? 'bg-green-50 border-green-200' : item.status === 'PENDING' ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200';
+                                    return ` + "`" + `<div class="flex items-start gap-3 p-3 ${statusColor} border rounded-lg">
+                                        <span class="text-2xl">${statusIcon}</span>
+                                        <div class="flex-1">
+                                            <div class="font-medium text-gray-800">${safe(item.title)}</div>
+                                            ${item.description ? ` + "`" + `<div class="text-sm text-gray-600 mt-1">${safe(item.description)}</div>` + "`" + ` : ''}
+                                        </div>
+                                    </div>` + "`" + `;
+                                }).join('')}
+                            </div>
+                            ` + "`" + ` : '<div class="text-center text-gray-500 py-8">Чек-лист пуст</div>'}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Футер с кнопками -->
+            <div class="border-t bg-gray-50 px-6 py-4 flex gap-3">
+                <a href="/patient?code=${safe(patient.access_code)}" target="_blank" class="flex-1 bg-blue-600 text-white text-center px-4 py-2 rounded-lg hover:bg-blue-700 font-medium">
+                    🔗 Открыть публичную страницу
+                </a>
+                <button onclick="closePatientModal()" class="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-medium">
+                    Закрыть
+                </button>
+            </div>
+        </div>
+        ` + "`" + `;
                 <button onclick="closePatientModal()" class="text-white hover:text-gray-200 text-3xl leading-none">&times;</button>
             </div>
 
@@ -824,6 +1023,34 @@ async function showPatientDetails(id) {
 function closePatientModal() {
     const modal = document.getElementById('patient-modal');
     if (modal) modal.remove();
+}
+
+function switchModalTab(tabName) {
+    // Remove active class from all tabs
+    document.querySelectorAll('[id^="tab-"]').forEach(tab => {
+        tab.classList.remove('tab-active');
+        tab.classList.add('text-gray-600');
+        tab.classList.remove('text-blue-600');
+    });
+
+    // Hide all content
+    document.querySelectorAll('[id^="content-"]').forEach(content => {
+        content.classList.add('hidden');
+    });
+
+    // Show selected tab and content
+    const selectedTab = document.getElementById('tab-' + tabName);
+    const selectedContent = document.getElementById('content-' + tabName);
+
+    if (selectedTab) {
+        selectedTab.classList.add('tab-active');
+        selectedTab.classList.remove('text-gray-600');
+        selectedTab.classList.add('text-blue-600');
+    }
+
+    if (selectedContent) {
+        selectedContent.classList.remove('hidden');
+    }
 }
 
 function copyAccessCode(code) {
