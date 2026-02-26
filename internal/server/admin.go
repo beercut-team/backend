@@ -966,8 +966,13 @@ async function updateSurgery(id) {
 }
 
 async function deleteSurgery(id) {
-    if (!confirm('Удалить операцию?')) return;
-    alert('Удаление операций пока не реализовано в API');
+    if (!confirm('Удалить операцию? Статус пациента будет возвращён в APPROVED.')) return;
+    try {
+        await api('/surgeries/' + id, { method: 'DELETE' });
+        await renderSurgeries();
+    } catch (err) {
+        alert('Ошибка: ' + err.message);
+    }
 }
 
 render();
