@@ -260,6 +260,54 @@ const { data: progress } = await progressResponse.json();
 // progress = { completed_count: 10, total_count: 15, percentage: 66.67 }
 ```
 
+**Добавление пунктов в чек-лист (только для районного врача):**
+```javascript
+// Врач может добавить дополнительные обследования к стандартному чек-листу
+async function addChecklistItem(patientId, itemData) {
+  const response = await fetchWithAuth('http://localhost:8080/api/v1/checklists', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      patient_id: patientId,
+      name: itemData.name,                    // Обязательно: "Консультация кардиолога"
+      description: itemData.description,      // Опционально: "При наличии гипертонии"
+      category: itemData.category,            // Опционально: "Заключения"
+      is_required: itemData.isRequired,       // Опционально: true/false
+      expires_in_days: itemData.expiresInDays // Опционально: 30
+    })
+  });
+
+  return await response.json();
+}
+
+// Пример использования
+await addChecklistItem(patientId, {
+  name: "Консультация кардиолога",
+  description: "При наличии гипертонии или ИБС",
+  category: "Заключения",
+  isRequired: true,
+  expiresInDays: 30
+});
+```
+
+**Отметка выполнения пункта чек-листа:**
+```javascript
+// Врач отмечает пункт как выполненный когда пациент приносит результаты
+async function markChecklistItemCompleted(itemId, result, notes) {
+  const response = await fetchWithAuth(`http://localhost:8080/api/v1/checklists/${itemId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      status: 'COMPLETED',
+      result: result,  // Опционально: "Гемоглобин 140 г/л"
+      notes: notes     // Опционально: "Все показатели в норме"
+    })
+  });
+
+  return await response.json();
+}
+```
+
 **Создание комментариев:**
 ```javascript
 // Пациент может задавать вопросы врачу

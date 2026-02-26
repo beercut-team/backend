@@ -972,6 +972,48 @@
         }
       }
     },
+    "/api/v1/checklists": {
+      "post": {
+        "tags": [
+          "Checklists"
+        ],
+        "summary": "Добавить пункт в чек-лист пациента",
+        "description": "Районный врач может добавить дополнительные обследования к стандартному чек-листу",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChecklistItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Пункт создан",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponseChecklistItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка валидации"
+          },
+          "403": {
+            "description": "Доступ запрещён (только для районного врача и администратора)"
+          }
+        }
+      }
+    },
     "/api/v1/checklists/{id}": {
       "patch": {
         "tags": [
@@ -3255,6 +3297,40 @@
           }
         }
       },
+      "CreateChecklistItemRequest": {
+        "type": "object",
+        "required": [
+          "patient_id",
+          "name"
+        ],
+        "properties": {
+          "patient_id": {
+            "type": "integer",
+            "description": "ID пациента"
+          },
+          "name": {
+            "type": "string",
+            "description": "Название пункта чек-листа"
+          },
+          "description": {
+            "type": "string",
+            "description": "Описание обследования"
+          },
+          "category": {
+            "type": "string",
+            "description": "Категория (Анализы, Обследования, Заключения, Офтальмология)"
+          },
+          "is_required": {
+            "type": "boolean",
+            "description": "Обязательный пункт",
+            "default": false
+          },
+          "expires_in_days": {
+            "type": "integer",
+            "description": "Срок действия результата в днях"
+          }
+        }
+      },
       "UpdateChecklistItemRequest": {
         "type": "object",
         "properties": {
@@ -3838,6 +3914,21 @@
                 "items": {
                   "$ref": "#/components/schemas/ChecklistItem"
                 }
+              }
+            }
+          }
+        ]
+      },
+      "APIResponseChecklistItem": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/APIResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/ChecklistItem"
               }
             }
           }
