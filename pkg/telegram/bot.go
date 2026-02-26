@@ -176,10 +176,13 @@ func (b *Bot) handleStatus(ctx context.Context, msg *tgbotapi.Message) {
 		return
 	}
 
+	// Use human-readable status name
+	statusName := domain.GetStatusDisplayName(patient.Status)
+
 	statusText := fmt.Sprintf(
 		"📋 Информация о пациенте\n\nПациент: %s %s\nСтатус: %s\nОперация: %s (%s)",
 		patient.FirstName, patient.LastName,
-		patient.Status, patient.OperationType, patient.Eye,
+		statusName, patient.OperationType, patient.Eye,
 	)
 
 	if patient.SurgeryDate != nil {
@@ -323,7 +326,12 @@ func (b *Bot) handleMyPatients(ctx context.Context, msg *tgbotapi.Message) {
 
 	text := "📋 Ваши пациенты:\n\n"
 	for i, p := range patients {
-		text += fmt.Sprintf("%d. %s %s - %s\n", i+1, p.FirstName, p.LastName, p.Status)
+		statusName := domain.GetStatusDisplayName(p.Status)
+		text += fmt.Sprintf("%d. %s %s - %s\n", i+1, p.FirstName, p.LastName, statusName)
+	}
+
+	if len(patients) == 10 {
+		text += "\n(Показаны первые 10 пациентов)"
 	}
 
 	b.sendMessage(msg.Chat.ID, text)
@@ -352,16 +360,27 @@ func (b *Bot) NotifyPatientStatusChange(ctx context.Context, patientID uint, new
 		return
 	}
 
-	statusText := map[string]string{
-		"PREPARATION":   "📝 Идёт подготовка к операции",
-		"REVIEW_NEEDED": "👨‍⚕️ Документы отправлены на проверку хирургу",
-		"APPROVED":      "✅ Вы готовы к операции! Ожидайте назначения даты",
-		"REJECTED":      "❌ Требуется дополнительная подготовка",
-		"SCHEDULED":     "📅 Операция запланирована",
-	}[newStatus]
+	// Use human-readable status name
+	statusName := domain.GetStatusDisplayName(domain.PatientStatus(newStatus))
 
-	message := fmt.Sprintf("🔔 Статус изменён\n\n%s\n\nПациент: %s %s\nОперация: %s (%s)",
-		statusText, patient.FirstName, patient.LastName, patient.OperationType, patient.Eye)
+	// Status-specific emoji and message
+	statusEmoji := map[domain.PatientStatus]string{
+		domain.PatientStatusInProgress:      "📝",
+		domain.PatientStatusPendingReview:   "👨‍⚕️",
+		domain.PatientStatusApproved:        "✅",
+		domain.PatientStatusNeedsCorrection: "⚠️",
+		domain.PatientStatusScheduled:       "📅",
+		domain.PatientStatusCompleted:       "🎉",
+		domain.PatientStatusCancelled:       "❌",
+	}
+
+	emoji := statusEmoji[domain.PatientStatus(newStatus)]
+	if emoji == "" {
+		emoji = "🔔"
+	}
+
+	message := fmt.Sprintf("%s Статус изменён\n\n%s\n\nПациент: %s %s\nОперация: %s (%s)",
+		emoji, statusName, patient.FirstName, patient.LastName, patient.OperationType, patient.Eye)
 
 	if patient.SurgeryDate != nil {
 		message += fmt.Sprintf("\n\n📅 Дата операции: %s", patient.SurgeryDate.Format("02.01.2006"))
@@ -393,23 +412,34 @@ func (b *Bot) NotifySurgeonReviewNeeded(ctx context.Context, patientID uint) {
 
 	patient, err := b.patientRepo.FindByID(ctx, patientID)
 	if err != nil {
+		log.Error().Err(err).Uint("patient_id", patientID).Msg("не удалось найти пациента для уведомления хирурга")
 		return
 	}
 
 	// Найти всех хирургов с привязанным Telegram
 	surgeons, err := b.userRepo.FindAll(ctx)
 	if err != nil {
+		log.Error().Err(err).Msg("не удалось найти хирургов")
 		return
 	}
 
-	message := fmt.Sprintf("🔍 Требуется проверка\n\nПациент: %s %s\nОперация: %s (%s)\nРайон: %s",
-		patient.FirstName, patient.LastName, patient.OperationType, patient.Eye, patient.District.Name)
+	districtName := "не указан"
+	if patient.District != nil {
+		districtName = patient.District.Name
+	}
 
+	message := fmt.Sprintf("🔍 Требуется проверка\n\nПациент: %s %s\nОперация: %s (%s)\nРайон: %s\n\nИспользуйте веб-интерфейс для проверки документов.",
+		patient.FirstName, patient.LastName, patient.OperationType, patient.Eye, districtName)
+
+	sentCount := 0
 	for _, surgeon := range surgeons {
 		if surgeon.Role == domain.RoleSurgeon && surgeon.TelegramChatID != nil {
 			b.sendMessage(*surgeon.TelegramChatID, message)
+			sentCount++
 		}
 	}
+
+	log.Info().Uint("patient_id", patientID).Int("surgeons_notified", sentCount).Msg("уведомления хирургам отправлены")
 }
 
 // NotifyPatientNewAccessCode уведомляет пациента о новом коде доступа
