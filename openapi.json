@@ -1610,7 +1610,8 @@
         "tags": [
           "Notifications"
         ],
-        "summary": "Список уведомлений",
+        "summary": "Список уведомлений текущего пользователя",
+        "description": "Возвращает список уведомлений с пагинацией. Уведомления создаются автоматически при: смене статуса пациента, планировании операции, новых комментариях, истечении срока чек-листа.",
         "security": [
           {
             "BearerAuth": []
@@ -1636,7 +1637,28 @@
         ],
         "responses": {
           "200": {
-            "description": "Список уведомлений"
+            "description": "Список уведомлений",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Notification"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Meta"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

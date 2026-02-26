@@ -22,10 +22,11 @@ type surgeryService struct {
 	repo          repository.SurgeryRepository
 	patientRepo   repository.PatientRepository
 	checklistRepo repository.ChecklistRepository
+	notifRepo     repository.NotificationRepository
 }
 
-func NewSurgeryService(repo repository.SurgeryRepository, patientRepo repository.PatientRepository, checklistRepo repository.ChecklistRepository) SurgeryService {
-	return &surgeryService{repo: repo, patientRepo: patientRepo, checklistRepo: checklistRepo}
+func NewSurgeryService(repo repository.SurgeryRepository, patientRepo repository.PatientRepository, checklistRepo repository.ChecklistRepository, notifRepo repository.NotificationRepository) SurgeryService {
+	return &surgeryService{repo: repo, patientRepo: patientRepo, checklistRepo: checklistRepo, notifRepo: notifRepo}
 }
 
 func (s *surgeryService) Schedule(ctx context.Context, req domain.CreateSurgeryRequest, surgeonID uint) (*domain.Surgery, error) {
@@ -79,6 +80,18 @@ func (s *surgeryService) Schedule(ctx context.Context, req domain.CreateSurgeryR
 	patient.SurgeryDate = &date
 	patient.SurgeonID = &surgeonID
 	s.patientRepo.Update(ctx, patient)
+
+	// Создать уведомление для врача о запланированной операции
+	if s.notifRepo != nil && patient.DoctorID != 0 {
+		s.notifRepo.Create(ctx, &domain.Notification{
+			UserID:     patient.DoctorID,
+			Type:       domain.NotifSurgeryScheduled,
+			Title:      "Операция запланирована",
+			Body:       patient.LastName + " " + patient.FirstName + " — " + date.Format("02.01.2006"),
+			EntityType: "surgery",
+			EntityID:   surgery.ID,
+		})
+	}
 
 	return surgery, nil
 }

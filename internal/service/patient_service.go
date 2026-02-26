@@ -26,11 +26,12 @@ type PatientService interface {
 type patientService struct {
 	repo          repository.PatientRepository
 	checklistRepo repository.ChecklistRepository
+	notifRepo     repository.NotificationRepository
 	bot           *telegram.Bot
 }
 
-func NewPatientService(repo repository.PatientRepository, checklistRepo repository.ChecklistRepository, bot *telegram.Bot) PatientService {
-	return &patientService{repo: repo, checklistRepo: checklistRepo, bot: bot}
+func NewPatientService(repo repository.PatientRepository, checklistRepo repository.ChecklistRepository, notifRepo repository.NotificationRepository, bot *telegram.Bot) PatientService {
+	return &patientService{repo: repo, checklistRepo: checklistRepo, notifRepo: notifRepo, bot: bot}
 }
 
 func (s *patientService) Create(ctx context.Context, req domain.CreatePatientRequest, doctorID uint) (*domain.Patient, error) {
@@ -242,6 +243,28 @@ func (s *patientService) ChangeStatus(ctx context.Context, id uint, req domain.P
 		ChangedBy:  changedBy,
 		Comment:    req.Comment,
 	})
+
+	// Создать уведомление для врача о смене статуса
+	if s.notifRepo != nil && p.DoctorID != 0 {
+		statusText := map[domain.PatientStatus]string{
+			domain.PatientStatusNew:              "Новый пациент",
+			domain.PatientStatusPreparation:      "Идёт подготовка",
+			domain.PatientStatusReviewNeeded:     "Требуется проверка",
+			domain.PatientStatusApproved:         "Готов к операции",
+			domain.PatientStatusSurgeryScheduled: "Операция запланирована",
+			domain.PatientStatusCompleted:        "Операция завершена",
+			domain.PatientStatusRejected:         "Требуется дополнительная подготовка",
+		}[req.Status]
+
+		s.notifRepo.Create(ctx, &domain.Notification{
+			UserID:     p.DoctorID,
+			Type:       domain.NotifStatusChange,
+			Title:      "Изменение статуса пациента",
+			Body:       p.LastName + " " + p.FirstName + " — " + statusText,
+			EntityType: "patient",
+			EntityID:   id,
+		})
+	}
 
 	// Отправить уведомление пациенту через Telegram
 	if s.bot != nil {
