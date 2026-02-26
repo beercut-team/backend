@@ -15,6 +15,7 @@ type SurgeryService interface {
 	GetByID(ctx context.Context, id uint) (*domain.Surgery, error)
 	ListBySurgeon(ctx context.Context, surgeonID uint, offset, limit int) ([]domain.Surgery, int64, error)
 	Update(ctx context.Context, id uint, req domain.UpdateSurgeryRequest) (*domain.Surgery, error)
+	Delete(ctx context.Context, id uint, deletedBy uint) error
 }
 
 type surgeryService struct {
@@ -124,4 +125,44 @@ func (s *surgeryService) Update(ctx context.Context, id uint, req domain.UpdateS
 		return nil, errors.New("не удалось обновить операцию")
 	}
 	return surgery, nil
+}
+
+func (s *surgeryService) Delete(ctx context.Context, id uint, deletedBy uint) error {
+	surgery, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("операция не найдена")
+		}
+		return err
+	}
+
+	// Get patient to revert status
+	patient, err := s.patientRepo.FindByID(ctx, surgery.PatientID)
+	if err != nil {
+		return errors.New("пациент не найден")
+	}
+
+	// Delete surgery
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return errors.New("не удалось удалить операцию")
+	}
+
+	// Revert patient status to APPROVED if surgery was scheduled
+	if surgery.Status == domain.SurgeryStatusScheduled && patient.Status == domain.PatientStatusSurgeryScheduled {
+		s.patientRepo.UpdateStatus(ctx, surgery.PatientID, domain.PatientStatusApproved)
+		s.patientRepo.CreateStatusHistory(ctx, &domain.PatientStatusHistory{
+			PatientID:  surgery.PatientID,
+			FromStatus: patient.Status,
+			ToStatus:   domain.PatientStatusApproved,
+			ChangedBy:  deletedBy,
+			Comment:    "Операция отменена",
+		})
+
+		// Clear surgery date and surgeon
+		patient.SurgeryDate = nil
+		patient.SurgeonID = nil
+		s.patientRepo.Update(ctx, patient)
+	}
+
+	return nil
 }

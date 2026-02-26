@@ -85,3 +85,19 @@ func (h *SurgeryHandler) Update(c *gin.Context) {
 
 	Success(c, http.StatusOK, surgery)
 }
+
+func (h *SurgeryHandler) Delete(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		BadRequest(c, "неверный id")
+		return
+	}
+
+	userID := middleware.GetUserID(c)
+	if err := h.svc.Delete(c.Request.Context(), uint(id), userID); err != nil {
+		Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	Success(c, http.StatusOK, gin.H{"message": "операция удалена"})
+}

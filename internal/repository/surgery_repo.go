@@ -14,6 +14,7 @@ type SurgeryRepository interface {
 	FindByPatient(ctx context.Context, patientID uint) ([]domain.Surgery, error)
 	FindBySurgeon(ctx context.Context, surgeonID uint, offset, limit int) ([]domain.Surgery, int64, error)
 	Update(ctx context.Context, surgery *domain.Surgery) error
+	Delete(ctx context.Context, id uint) error
 	FindUpcoming(ctx context.Context, before time.Time) ([]domain.Surgery, error)
 }
 
@@ -60,6 +61,10 @@ func (r *surgeryRepository) FindBySurgeon(ctx context.Context, surgeonID uint, o
 
 func (r *surgeryRepository) Update(ctx context.Context, surgery *domain.Surgery) error {
 	return r.db.WithContext(ctx).Save(surgery).Error
+}
+
+func (r *surgeryRepository) Delete(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Delete(&domain.Surgery{}, id).Error
 }
 
 func (r *surgeryRepository) FindUpcoming(ctx context.Context, before time.Time) ([]domain.Surgery, error) {

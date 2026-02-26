@@ -209,6 +209,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 				surgeries.GET("/:id", surgeryHandler.GetByID)
 				surgeries.POST("", middleware.RequireRole(domain.RoleSurgeon, domain.RoleAdmin), surgeryHandler.Schedule)
 				surgeries.PATCH("/:id", middleware.RequireRole(domain.RoleSurgeon, domain.RoleAdmin), surgeryHandler.Update)
+				surgeries.DELETE("/:id", middleware.RequireRole(domain.RoleSurgeon, domain.RoleAdmin), surgeryHandler.Delete)
 			}
 
 			// Comments
