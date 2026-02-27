@@ -17,7 +17,7 @@ type PatientRepository interface {
 	UpdateStatus(ctx context.Context, id uint, status domain.PatientStatus) error
 	CreateStatusHistory(ctx context.Context, h *domain.PatientStatusHistory) error
 	FindStatusHistory(ctx context.Context, patientID uint) ([]domain.PatientStatusHistory, error)
-	CountByStatus(ctx context.Context, doctorID *uint) (map[domain.PatientStatus]int64, error)
+	CountByStatus(ctx context.Context, doctorID *uint, role domain.Role) (map[domain.PatientStatus]int64, error)
 	CountByAccessCode(ctx context.Context, code string, count *int64) error
 }
 
@@ -120,7 +120,7 @@ func (r *patientRepository) FindStatusHistory(ctx context.Context, patientID uin
 	return history, err
 }
 
-func (r *patientRepository) CountByStatus(ctx context.Context, doctorID *uint) (map[domain.PatientStatus]int64, error) {
+func (r *patientRepository) CountByStatus(ctx context.Context, doctorID *uint, role domain.Role) (map[domain.PatientStatus]int64, error) {
 	type result struct {
 		Status domain.PatientStatus
 		Count  int64
@@ -130,6 +130,15 @@ func (r *patientRepository) CountByStatus(ctx context.Context, doctorID *uint) (
 	query := r.db.WithContext(ctx).Model(&domain.Patient{}).Select("status, count(*) as count").Group("status")
 	if doctorID != nil {
 		query = query.Where("doctor_id = ?", *doctorID)
+	}
+	if role == domain.RoleSurgeon {
+		query = query.Where("status IN ?", []domain.PatientStatus{
+			domain.PatientStatusPendingReview,
+			domain.PatientStatusApproved,
+			domain.PatientStatusScheduled,
+			domain.PatientStatusCompleted,
+			domain.PatientStatusNeedsCorrection,
+		})
 	}
 
 	if err := query.Find(&results).Error; err != nil {

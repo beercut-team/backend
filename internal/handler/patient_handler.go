@@ -152,7 +152,7 @@ func (h *PatientHandler) Dashboard(c *gin.Context) {
 		doctorID = &userID
 	}
 
-	stats, err := h.svc.DashboardStats(c.Request.Context(), doctorID)
+	stats, err := h.svc.DashboardStats(c.Request.Context(), doctorID, role)
 	if err != nil {
 		InternalError(c, "не удалось получить статистику")
 		return

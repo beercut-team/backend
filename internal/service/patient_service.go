@@ -22,7 +22,7 @@ type PatientService interface {
 	Delete(ctx context.Context, id uint) error
 	ChangeStatus(ctx context.Context, id uint, req domain.PatientStatusRequest, changedBy uint) error
 	RegenerateAccessCode(ctx context.Context, id uint) (*domain.Patient, error)
-	DashboardStats(ctx context.Context, doctorID *uint) (map[domain.PatientStatus]int64, error)
+	DashboardStats(ctx context.Context, doctorID *uint, role domain.Role) (map[domain.PatientStatus]int64, error)
 	BatchUpdate(ctx context.Context, id uint, req domain.BatchUpdateRequest, userID uint) (*domain.BatchUpdateResponse, error)
 }
 
@@ -395,8 +395,8 @@ func (s *patientService) RegenerateAccessCode(ctx context.Context, id uint) (*do
 	return p, nil
 }
 
-func (s *patientService) DashboardStats(ctx context.Context, doctorID *uint) (map[domain.PatientStatus]int64, error) {
-	return s.repo.CountByStatus(ctx, doctorID)
+func (s *patientService) DashboardStats(ctx context.Context, doctorID *uint, role domain.Role) (map[domain.PatientStatus]int64, error) {
+	return s.repo.CountByStatus(ctx, doctorID, role)
 }
 
 func (s *patientService) BatchUpdate(ctx context.Context, id uint, req domain.BatchUpdateRequest, userID uint) (*domain.BatchUpdateResponse, error) {
