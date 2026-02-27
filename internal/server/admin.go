@@ -440,8 +440,7 @@ async function renderUsers(page = 1) {
                 <td class="px-4 py-3">${dist ? dist.name : '—'}</td>
                 <td class="px-4 py-3">${u.is_active ? '<span class="text-green-600">✓</span>' : '<span class="text-red-600">✗</span>'}</td>
                 <td class="px-4 py-3 space-x-2">
-                    <button onclick='editUser(${JSON.stringify(u).replace(/'/g,"&#39;")})' class="text-blue-600 hover:underline text-xs">Изменить</button>
-                    <button onclick="deleteUser(${safe(u.id)})" class="text-red-600 hover:underline text-xs">Удалить</button>
+                    <span class="text-gray-400 text-xs">—</span>
                 </td>
             </tr>` + "`" + `;
         });
@@ -461,47 +460,37 @@ async function renderUsers(page = 1) {
 }
 
 function showCreateUser() {
-    document.getElementById('user-form-area').innerHTML = userForm({}, 'createUser');
-    const phoneInput = document.getElementById('uf-phone');
-    if (phoneInput) maskPhoneInput(phoneInput);
-}
-
-function editUser(u) {
-    document.getElementById('user-form-area').innerHTML = userForm(u, 'updateUser');
-    const phoneInput = document.getElementById('uf-phone');
-    if (phoneInput) maskPhoneInput(phoneInput);
-}
-
-function userForm(u, fn) {
     const districts = window.allDistricts || [];
-    return ` + "`" + `
+    document.getElementById('user-form-area').innerHTML = ` + "`" + `
     <div class="bg-white rounded-xl shadow p-4 mb-4">
         <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <input id="uf-email" placeholder="Email" value="${safe(u.email, '')}" class="border rounded px-3 py-2 text-sm" ${u.id?'disabled':''}>
-            <input id="uf-name" placeholder="Полное имя" value="${safe(u.name, '')}" class="border rounded px-3 py-2 text-sm">
-            <input id="uf-fname" placeholder="Имя" value="${safe(u.first_name, '')}" class="border rounded px-3 py-2 text-sm">
-            <input id="uf-lname" placeholder="Фамилия" value="${safe(u.last_name, '')}" class="border rounded px-3 py-2 text-sm">
-            <input id="uf-mname" placeholder="Отчество" value="${safe(u.middle_name, '')}" class="border rounded px-3 py-2 text-sm">
-            <input id="uf-phone" placeholder="Телефон" value="${safe(u.phone, '')}" class="border rounded px-3 py-2 text-sm">
+            <input id="uf-email" placeholder="Email" class="border rounded px-3 py-2 text-sm">
+            <input id="uf-name" placeholder="Полное имя" class="border rounded px-3 py-2 text-sm">
+            <input id="uf-fname" placeholder="Имя" class="border rounded px-3 py-2 text-sm">
+            <input id="uf-lname" placeholder="Фамилия" class="border rounded px-3 py-2 text-sm">
+            <input id="uf-mname" placeholder="Отчество" class="border rounded px-3 py-2 text-sm">
+            <input id="uf-phone" placeholder="Телефон" class="border rounded px-3 py-2 text-sm">
             <select id="uf-role" class="border rounded px-3 py-2 text-sm">
-                <option value="PATIENT" ${u.role==='PATIENT'?'selected':''}>Пациент</option>
-                <option value="DISTRICT_DOCTOR" ${u.role==='DISTRICT_DOCTOR'?'selected':''}>Районный врач</option>
-                <option value="SURGEON" ${u.role==='SURGEON'?'selected':''}>Хирург</option>
-                <option value="CALL_CENTER" ${u.role==='CALL_CENTER'?'selected':''}>Колл-центр</option>
-                <option value="ADMIN" ${u.role==='ADMIN'?'selected':''}>Администратор</option>
+                <option value="PATIENT">Пациент</option>
+                <option value="DISTRICT_DOCTOR">Районный врач</option>
+                <option value="SURGEON">Хирург</option>
+                <option value="CALL_CENTER">Колл-центр</option>
+                <option value="ADMIN">Администратор</option>
             </select>
             <select id="uf-district" class="border rounded px-3 py-2 text-sm">
                 <option value="">Без района</option>
-                ${districts.map(d => ` + "`" + `<option value="${safe(d.id)}" ${u.district_id===d.id?'selected':''}>${safe(d.name)}</option>` + "`" + `).join('')}
+                ${districts.map(d => ` + "`" + `<option value="${safe(d.id)}">${safe(d.name)}</option>` + "`" + `).join('')}
             </select>
-            ${!u.id ? '<input id="uf-password" type="password" placeholder="Пароль" class="border rounded px-3 py-2 text-sm">' : ''}
+            <input id="uf-password" type="password" placeholder="Пароль" class="border rounded px-3 py-2 text-sm">
         </div>
         <div class="mt-3 flex gap-2">
-            <button onclick="${fn}(${u.id||0})" class="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700">Сохранить</button>
+            <button onclick="createUser()" class="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700">Создать</button>
             <button onclick="document.getElementById('user-form-area').innerHTML=''" class="bg-gray-200 px-4 py-1.5 rounded text-sm hover:bg-gray-300">Отмена</button>
         </div>
     </div>
     ` + "`" + `;
+    const phoneInput = document.getElementById('uf-phone');
+    if (phoneInput) maskPhoneInput(phoneInput);
 }
 
 async function createUser() {
@@ -521,15 +510,6 @@ async function createUser() {
         })
     });
     await renderUsers();
-}
-
-async function updateUser(id) {
-    alert('Редактирование пользователей пока не реализовано в API');
-}
-
-async function deleteUser(id) {
-    if (!confirm('Удалить пользователя?')) return;
-    alert('Удаление пользователей пока не реализовано в API');
 }
 
 async function renderPatients(page = 1) {
@@ -898,121 +878,6 @@ async function showPatientDetails(id) {
             </div>
         </div>
         ` + "`" + `;
-                <button onclick="closePatientModal()" class="text-white hover:text-gray-200 text-3xl leading-none">&times;</button>
-            </div>
-
-            <div class="p-6 space-y-6">
-                <!-- Код доступа -->
-                <div class="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <div class="text-sm text-gray-600 mb-1">🔑 Код доступа пациента</div>
-                            <div class="text-3xl font-mono font-bold text-green-700">${safe(patient.access_code, 'Не задан')}</div>
-                            <div class="text-xs text-gray-500 mt-2">Для Telegram: /start ${safe(patient.access_code, 'Не задан')}</div>
-                            <div class="text-xs text-gray-500">Для сайта: /patient?code=${safe(patient.access_code, 'Не задан')}</div>
-                        </div>
-                        <button onclick="copyAccessCode('${safe(patient.access_code, 'Не задан')}')" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
-                            📋 Копировать
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Основная информация -->
-                <div class="grid md:grid-cols-2 gap-4">
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <h3 class="font-bold text-gray-700 mb-3 flex items-center">
-                            <span class="text-blue-600 mr-2">👤</span> Личные данные
-                        </h3>
-                        <div class="space-y-2 text-sm">
-                            <div><span class="text-gray-600">ФИО:</span> <span class="font-medium">${safe(patient.last_name)} ${safe(patient.first_name)} ${safe(patient.middle_name, '')}</span></div>
-                            <div><span class="text-gray-600">Дата рождения:</span> <span class="font-medium">${dob}</span></div>
-                            <div><span class="text-gray-600">Телефон:</span> <span class="font-medium">${formatPhone(patient.phone)}</span></div>
-                            <div><span class="text-gray-600">Email:</span> <span class="font-medium">${safe(patient.email)}</span></div>
-                            <div><span class="text-gray-600">Адрес:</span> <span class="font-medium">${safe(patient.address)}</span></div>
-                        </div>
-                    </div>
-
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <h3 class="font-bold text-gray-700 mb-3 flex items-center">
-                            <span class="text-red-600 mr-2">📋</span> Документы
-                        </h3>
-                        <div class="space-y-2 text-sm">
-                            <div><span class="text-gray-600">СНИЛС:</span> <span class="font-medium">${safe(patient.snils)}</span></div>
-                            <div><span class="text-gray-600">Паспорт:</span> <span class="font-medium">${safe(patient.passport_series, '')} ${safe(patient.passport_number)}</span></div>
-                            <div><span class="text-gray-600">Полис ОМС:</span> <span class="font-medium">${safe(patient.policy_number)}</span></div>
-                            <div><span class="text-gray-600">Район:</span> <span class="font-medium">${patient.district ? safe(patient.district.name) : '—'}</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Медицинская информация -->
-                <div class="bg-blue-50 rounded-lg p-4">
-                    <h3 class="font-bold text-gray-700 mb-3 flex items-center">
-                        <span class="text-blue-600 mr-2">🏥</span> Медицинская информация
-                    </h3>
-                    <div class="grid md:grid-cols-2 gap-4 text-sm">
-                        <div><span class="text-gray-600">Диагноз:</span> <span class="font-medium">${safe(patient.diagnosis)}</span></div>
-                        <div><span class="text-gray-600">Тип операции:</span> <span class="font-medium">${safe(patient.operation_type)}</span></div>
-                        <div><span class="text-gray-600">Глаз:</span> <span class="font-medium">${safe(patient.eye)}</span></div>
-                        <div><span class="text-gray-600">Дата операции:</span> <span class="font-medium">${surgeryDate}</span></div>
-                        <div class="md:col-span-2"><span class="text-gray-600">Заметки:</span> <span class="font-medium">${safe(patient.notes)}</span></div>
-                    </div>
-                </div>
-
-                <!-- Статус -->
-                <div class="bg-yellow-50 rounded-lg p-4">
-                    <h3 class="font-bold text-gray-700 mb-3 flex items-center">
-                        <span class="text-yellow-600 mr-2">📊</span> Статус подготовки
-                    </h3>
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <div class="text-2xl font-bold text-gray-800">${safe(patient.status)}</div>
-                            <div class="text-sm text-gray-600 mt-1">Прогресс чек-листа: ${completedItems}/${totalItems} (${progress}%)</div>
-                        </div>
-                        <div class="w-32 h-32">
-                            <svg viewBox="0 0 36 36" class="circular-chart">
-                                <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e5e7eb" stroke-width="3"/>
-                                <path class="circle" stroke-dasharray="${progress}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#10b981" stroke-width="3"/>
-                                <text x="18" y="20.35" class="percentage" text-anchor="middle" font-size="8" font-weight="bold" fill="#374151">${progress}%</text>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Чек-лист -->
-                ${checklistItems.length > 0 ? ` + "`" + `
-                <div class="bg-gray-50 rounded-lg p-4">
-                    <h3 class="font-bold text-gray-700 mb-3 flex items-center">
-                        <span class="text-purple-600 mr-2">✓</span> Чек-лист подготовки
-                    </h3>
-                    <div class="space-y-2 max-h-64 overflow-y-auto">
-                        ${checklistItems.map(item => {
-                            const statusIcon = item.status === 'COMPLETED' ? '✅' : item.status === 'PENDING' ? '⏳' : '❌';
-                            const statusColor = item.status === 'COMPLETED' ? 'text-green-600' : item.status === 'PENDING' ? 'text-yellow-600' : 'text-red-600';
-                            return ` + "`" + `<div class="flex items-start gap-2 text-sm p-2 bg-white rounded">
-                                <span class="text-lg">${statusIcon}</span>
-                                <div class="flex-1">
-                                    <div class="font-medium ${statusColor}">${safe(item.title)}</div>
-                                    ${item.description ? ` + "`" + `<div class="text-xs text-gray-500">${safe(item.description, '')}</div>` + "`" + ` : ''}
-                                </div>
-                            </div>` + "`" + `;
-                        }).join('')}
-                    </div>
-                </div>
-                ` + "`" + ` : ''}
-
-                <!-- Действия -->
-                <div class="flex gap-3 pt-4 border-t">
-                    <a href="/patient?code=${safe(patient.access_code, 'Не задан')}" target="_blank" class="flex-1 bg-blue-600 text-white text-center px-4 py-2 rounded-lg hover:bg-blue-700">
-                        🔗 Открыть публичную страницу
-                    </a>
-                    <button onclick="closePatientModal()" class="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">
-                        Закрыть
-                    </button>
-                </div>
-            </div>
-        </div>
-        ` + "`" + `;
 
         document.body.appendChild(modal);
     } catch (err) {
@@ -1183,6 +1048,7 @@ async function createSurgery() {
         method: 'POST',
         body: JSON.stringify({
             patient_id: parseInt(document.getElementById('sf-patient').value),
+            surgeon_id: parseInt(document.getElementById('sf-surgeon').value),
             scheduled_date: document.getElementById('sf-date').value,
             notes: document.getElementById('sf-notes').value
         })
