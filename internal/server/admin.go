@@ -27,13 +27,14 @@ const adminHTML = `<!DOCTYPE html>
 <div id="app"></div>
 
 <script>
-const API = '/api/v1';
+const API = window.location.origin + '/api/v1';
 let token = localStorage.getItem('admin_token') || '';
 let refreshToken = localStorage.getItem('admin_refresh_token') || '';
 let currentTab = 'dashboard';
 let isRefreshing = false;
 let currentPage = 1;
 let pageSize = 20;
+let isLoading = false;
 
 // Helper function to safely display values
 function safe(value, fallback = '—') {
@@ -153,21 +154,65 @@ async function refreshAccessToken() {
     }
 }
 
+function showLoading() {
+    isLoading = true;
+    const loader = document.getElementById('global-loader');
+    if (loader) loader.classList.remove('hidden');
+}
+
+function hideLoading() {
+    isLoading = false;
+    const loader = document.getElementById('global-loader');
+    if (loader) loader.classList.add('hidden');
+}
+
+function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slideUp';
+    errorDiv.textContent = '❌ ' + message;
+    document.body.appendChild(errorDiv);
+    setTimeout(() => errorDiv.remove(), 5000);
+}
+
+function showSuccess(message) {
+    const successDiv = document.createElement('div');
+    successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slideUp';
+    successDiv.textContent = '✅ ' + message;
+    document.body.appendChild(successDiv);
+    setTimeout(() => successDiv.remove(), 3000);
+}
+
 function api(path, opts = {}) {
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = 'Bearer ' + token;
-    return fetch(API + path, { ...opts, headers }).then(async r => {
-        if (r.status === 401 && refreshToken && !opts._retry) {
-            const refreshed = await refreshAccessToken();
-            if (refreshed) {
-                opts._retry = true;
-                return api(path, opts);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+    return fetch(API + path, { ...opts, headers, signal: controller.signal })
+        .then(async r => {
+            clearTimeout(timeoutId);
+            if (r.status === 401 && refreshToken && !opts._retry) {
+                const refreshed = await refreshAccessToken();
+                if (refreshed) {
+                    opts._retry = true;
+                    return api(path, opts);
+                }
             }
-        }
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || r.statusText);
-        return data;
-    });
+            const data = await r.json();
+            if (!r.ok) throw new Error(data.error || r.statusText);
+            return data;
+        })
+        .catch(err => {
+            clearTimeout(timeoutId);
+            if (err.name === 'AbortError') {
+                throw new Error('Превышено время ожидания. Проверьте подключение к интернету.');
+            }
+            if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+                throw new Error('Ошибка сети. Проверьте подключение к интернету.');
+            }
+            throw err;
+        });
 }
 
 function render() {
@@ -239,6 +284,12 @@ function switchTab(tab) {
 
 async function renderApp() {
     document.getElementById('app').innerHTML = ` + "`" + `
+    <div id="global-loader" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 shadow-xl">
+            <div class="loader mx-auto"></div>
+            <p class="text-gray-600 mt-3 text-sm">Загрузка...</p>
+        </div>
+    </div>
     <nav class="bg-white shadow">
         <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
             <span class="font-bold text-lg">Oculus-Feldsher Admin</span>
@@ -257,6 +308,7 @@ async function renderApp() {
     </div>
     ` + "`" + `;
     try {
+        showLoading();
         if (currentTab === 'dashboard') await renderDashboard();
         else if (currentTab === 'districts') await renderDistricts();
         else if (currentTab === 'users') await renderUsers();
@@ -266,8 +318,11 @@ async function renderApp() {
         if (err.message.includes('expired') || err.message.includes('invalid')) {
             logout();
         } else {
-            document.getElementById('tab-content').innerHTML = '<p class="text-red-500">Ошибка: ' + err.message + '</p>';
+            showError(err.message);
+            document.getElementById('tab-content').innerHTML = '<div class="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700"><p class="font-medium">Ошибка загрузки данных</p><p class="text-sm mt-1">' + err.message + '</p></div>';
         }
+    } finally {
+        hideLoading();
     }
 }
 
@@ -387,35 +442,59 @@ async function createDistrict() {
         return;
     }
 
-    await api('/districts', {
-        method: 'POST',
-        body: JSON.stringify({
-            name: document.getElementById('df-name').value,
-            region: document.getElementById('df-region').value,
-            code: document.getElementById('df-code').value,
-            timezone: document.getElementById('df-tz').value
-        })
-    });
-    await renderDistricts();
+    try {
+        showLoading();
+        await api('/districts', {
+            method: 'POST',
+            body: JSON.stringify({
+                name: document.getElementById('df-name').value,
+                region: document.getElementById('df-region').value,
+                code: document.getElementById('df-code').value,
+                timezone: document.getElementById('df-tz').value
+            })
+        });
+        showSuccess('Район успешно создан');
+        await renderDistricts();
+    } catch (err) {
+        showError('Ошибка создания района: ' + err.message);
+    } finally {
+        hideLoading();
+    }
 }
 
 async function updateDistrict(id) {
-    await api('/districts/' + id, {
-        method: 'PATCH',
-        body: JSON.stringify({
-            name: document.getElementById('df-name').value,
-            region: document.getElementById('df-region').value,
-            code: document.getElementById('df-code').value,
-            timezone: document.getElementById('df-tz').value
-        })
-    });
-    await renderDistricts();
+    try {
+        showLoading();
+        await api('/districts/' + id, {
+            method: 'PATCH',
+            body: JSON.stringify({
+                name: document.getElementById('df-name').value,
+                region: document.getElementById('df-region').value,
+                code: document.getElementById('df-code').value,
+                timezone: document.getElementById('df-tz').value
+            })
+        });
+        showSuccess('Район успешно обновлён');
+        await renderDistricts();
+    } catch (err) {
+        showError('Ошибка обновления района: ' + err.message);
+    } finally {
+        hideLoading();
+    }
 }
 
 async function deleteDistrict(id) {
     if (!confirm('Удалить район?')) return;
-    await api('/districts/' + id, { method: 'DELETE' });
-    await renderDistricts();
+    try {
+        showLoading();
+        await api('/districts/' + id, { method: 'DELETE' });
+        showSuccess('Район успешно удалён');
+        await renderDistricts();
+    } catch (err) {
+        showError('Ошибка удаления района: ' + err.message);
+    } finally {
+        hideLoading();
+    }
 }
 
 async function renderUsers(page = 1) {
@@ -540,21 +619,29 @@ async function createUser() {
         return;
     }
 
-    await api('/auth/register', {
-        method: 'POST',
-        body: JSON.stringify({
-            email: document.getElementById('uf-email').value,
-            password: document.getElementById('uf-password').value,
-            name: document.getElementById('uf-name').value,
-            first_name: document.getElementById('uf-fname').value,
-            last_name: document.getElementById('uf-lname').value,
-            middle_name: document.getElementById('uf-mname').value,
-            phone: phone,
-            role: document.getElementById('uf-role').value,
-            district_id: districtId ? parseInt(districtId) : null
-        })
-    });
-    await renderUsers();
+    try {
+        showLoading();
+        await api('/auth/register', {
+            method: 'POST',
+            body: JSON.stringify({
+                email: document.getElementById('uf-email').value,
+                password: document.getElementById('uf-password').value,
+                name: document.getElementById('uf-name').value,
+                first_name: document.getElementById('uf-fname').value,
+                last_name: document.getElementById('uf-lname').value,
+                middle_name: document.getElementById('uf-mname').value,
+                phone: phone,
+                role: document.getElementById('uf-role').value,
+                district_id: districtId ? parseInt(districtId) : null
+            })
+        });
+        showSuccess('Пользователь успешно создан');
+        await renderUsers();
+    } catch (err) {
+        showError('Ошибка создания пользователя: ' + err.message);
+    } finally {
+        hideLoading();
+    }
 }
 
 async function renderPatients(page = 1) {
@@ -688,23 +775,31 @@ async function createPatient() {
         return;
     }
 
-    await api('/patients', {
-        method: 'POST',
-        body: JSON.stringify({
-            first_name: document.getElementById('pf-fname').value,
-            last_name: document.getElementById('pf-lname').value,
-            middle_name: document.getElementById('pf-mname').value,
-            phone: phone,
-            email: document.getElementById('pf-email').value,
-            date_of_birth: document.getElementById('pf-dob').value,
-            diagnosis: document.getElementById('pf-diagnosis').value,
-            operation_type: document.getElementById('pf-optype').value,
-            eye: document.getElementById('pf-eye').value,
-            district_id: parseInt(document.getElementById('pf-district').value),
-            notes: document.getElementById('pf-notes').value
-        })
-    });
-    await renderPatients();
+    try {
+        showLoading();
+        await api('/patients', {
+            method: 'POST',
+            body: JSON.stringify({
+                first_name: document.getElementById('pf-fname').value,
+                last_name: document.getElementById('pf-lname').value,
+                middle_name: document.getElementById('pf-mname').value,
+                phone: phone,
+                email: document.getElementById('pf-email').value,
+                date_of_birth: document.getElementById('pf-dob').value,
+                diagnosis: document.getElementById('pf-diagnosis').value,
+                operation_type: document.getElementById('pf-optype').value,
+                eye: document.getElementById('pf-eye').value,
+                district_id: parseInt(document.getElementById('pf-district').value),
+                notes: document.getElementById('pf-notes').value
+            })
+        });
+        showSuccess('Пациент успешно создан');
+        await renderPatients();
+    } catch (err) {
+        showError('Ошибка создания пациента: ' + err.message);
+    } finally {
+        hideLoading();
+    }
 }
 
 async function updatePatient(id) {
@@ -714,27 +809,38 @@ async function updatePatient(id) {
         alert('Неверный формат телефона. Используйте 10 или 11 цифр.');
         return;
     }
-    await api('/patients/' + id, {
-        method: 'PATCH',
-        body: JSON.stringify({
-            phone: phone,
-            email: document.getElementById('pf-email').value,
-            diagnosis: document.getElementById('pf-diagnosis').value,
-            notes: document.getElementById('pf-notes').value
-        })
-    });
-    await renderPatients();
+    try {
+        showLoading();
+        await api('/patients/' + id, {
+            method: 'PATCH',
+            body: JSON.stringify({
+                phone: phone,
+                email: document.getElementById('pf-email').value,
+                diagnosis: document.getElementById('pf-diagnosis').value,
+                notes: document.getElementById('pf-notes').value
+            })
+        });
+        showSuccess('Пациент успешно обновлён');
+        await renderPatients();
+    } catch (err) {
+        showError('Ошибка обновления пациента: ' + err.message);
+    } finally {
+        hideLoading();
+    }
 }
 
 async function deletePatient(id) {
     if (!confirm('⚠️ Вы уверены, что хотите удалить этого пациента?\n\nЭто действие необратимо и удалит:\n- Карту пациента\n- Все чек-листы\n- Историю статусов\n- Связанные файлы\n\nПродолжить?')) return;
 
     try {
+        showLoading();
         await api('/patients/' + id, { method: 'DELETE' });
-        alert('✅ Пациент успешно удалён');
+        showSuccess('Пациент успешно удалён');
         await renderPatients();
     } catch (err) {
-        alert('❌ Ошибка удаления: ' + err.message);
+        showError('Ошибка удаления пациента: ' + err.message);
+    } finally {
+        hideLoading();
     }
 }
 
@@ -1139,37 +1245,57 @@ async function createSurgery() {
         return;
     }
 
-    await api('/surgeries', {
-        method: 'POST',
-        body: JSON.stringify({
-            patient_id: parseInt(document.getElementById('sf-patient').value),
-            surgeon_id: parseInt(document.getElementById('sf-surgeon').value),
-            scheduled_date: document.getElementById('sf-date').value,
-            notes: document.getElementById('sf-notes').value
-        })
-    });
-    await renderSurgeries();
+    try {
+        showLoading();
+        await api('/surgeries', {
+            method: 'POST',
+            body: JSON.stringify({
+                patient_id: parseInt(document.getElementById('sf-patient').value),
+                surgeon_id: parseInt(document.getElementById('sf-surgeon').value),
+                scheduled_date: document.getElementById('sf-date').value,
+                notes: document.getElementById('sf-notes').value
+            })
+        });
+        showSuccess('Операция успешно запланирована');
+        await renderSurgeries();
+    } catch (err) {
+        showError('Ошибка создания операции: ' + err.message);
+    } finally {
+        hideLoading();
+    }
 }
 
 async function updateSurgery(id) {
-    await api('/surgeries/' + id, {
-        method: 'PATCH',
-        body: JSON.stringify({
-            scheduled_date: document.getElementById('sf-date').value,
-            status: document.getElementById('sf-status').value,
-            notes: document.getElementById('sf-notes').value
-        })
-    });
-    await renderSurgeries();
+    try {
+        showLoading();
+        await api('/surgeries/' + id, {
+            method: 'PATCH',
+            body: JSON.stringify({
+                scheduled_date: document.getElementById('sf-date').value,
+                status: document.getElementById('sf-status').value,
+                notes: document.getElementById('sf-notes').value
+            })
+        });
+        showSuccess('Операция успешно обновлена');
+        await renderSurgeries();
+    } catch (err) {
+        showError('Ошибка обновления операции: ' + err.message);
+    } finally {
+        hideLoading();
+    }
 }
 
 async function deleteSurgery(id) {
     if (!confirm('Удалить операцию? Статус пациента будет возвращён в APPROVED.')) return;
     try {
+        showLoading();
         await api('/surgeries/' + id, { method: 'DELETE' });
+        showSuccess('Операция успешно удалена');
         await renderSurgeries();
     } catch (err) {
-        alert('Ошибка: ' + err.message);
+        showError('Ошибка удаления операции: ' + err.message);
+    } finally {
+        hideLoading();
     }
 }
 
