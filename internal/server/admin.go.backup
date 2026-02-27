@@ -208,12 +208,10 @@ function renderLogin() {
                     password: document.getElementById('password').value
                 })
             });
-            if (!response.success || !response.data) {
-                throw new Error('Invalid API response');
-            }
-            if (response.data.user.role !== 'ADMIN') throw new Error('Доступ только для администраторов');
-            token = response.data.access_token;
-            refreshToken = response.data.refresh_token;
+            const data = response.data || response;
+            if (data.user.role !== 'ADMIN') throw new Error('Доступ только для администраторов');
+            token = data.access_token;
+            refreshToken = data.refresh_token;
             localStorage.setItem('admin_token', token);
             localStorage.setItem('admin_refresh_token', refreshToken);
             render();
@@ -273,10 +271,7 @@ async function renderApp() {
 
 async function renderDashboard() {
     const statsResponse = await api('/admin/stats');
-    if (!statsResponse.success || !statsResponse.data) {
-        throw new Error('Invalid API response');
-    }
-    const stats = statsResponse.data;
+    const stats = statsResponse.data || statsResponse;
     document.getElementById('tab-content').innerHTML = ` + "`" + `
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-white rounded-xl shadow p-6 text-center">
@@ -301,10 +296,7 @@ async function renderDashboard() {
 
 async function renderDistricts(page = 1) {
     const response = await api('/districts?page=' + page + '&limit=' + pageSize);
-    if (!response.success || !response.data) {
-        throw new Error('Invalid API response');
-    }
-    const districts = response.data;
+    const districts = response.data || response;
     const meta = response.meta || {};
     let html = ` + "`" + `
     <div class="mb-4">
@@ -420,16 +412,10 @@ async function deleteDistrict(id) {
 
 async function renderUsers(page = 1) {
     const usersResponse = await api('/admin/users?page=' + page + '&limit=' + pageSize);
-    if (!usersResponse.success || !usersResponse.data) {
-        throw new Error('Invalid API response');
-    }
-    const users = usersResponse.data;
+    const users = usersResponse.data || usersResponse;
     const meta = usersResponse.meta || {};
     const districtsResponse = await api('/districts?limit=100');
-    if (!districtsResponse.success || !districtsResponse.data) {
-        throw new Error('Invalid API response');
-    }
-    const districts = districtsResponse.data;
+    const districts = districtsResponse.data || districtsResponse;
     let html = ` + "`" + `
     <div class="mb-4">
         <button onclick="showCreateUser()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">+ Добавить пользователя</button>
@@ -559,16 +545,10 @@ async function createUser() {
 
 async function renderPatients(page = 1) {
     const patientsResponse = await api('/patients?page=' + page + '&limit=' + pageSize);
-    if (!patientsResponse.success || !patientsResponse.data) {
-        throw new Error('Invalid API response');
-    }
-    const patients = patientsResponse.data;
+    const patients = patientsResponse.data || patientsResponse;
     const meta = patientsResponse.meta || {};
     const districtsResponse = await api('/districts?limit=100');
-    if (!districtsResponse.success || !districtsResponse.data) {
-        throw new Error('Invalid API response');
-    }
-    const districts = districtsResponse.data;
+    const districts = districtsResponse.data || districtsResponse;
     let items = Array.isArray(patients) ? patients : (patients.patients || []);
     let html = ` + "`" + `
     <div class="mb-4">
@@ -741,10 +721,7 @@ async function deletePatient(id) {
 async function showPatientDetails(id) {
     try {
         const patientResponse = await api('/patients/' + id);
-        if (!patientResponse.success || !patientResponse.data) {
-            throw new Error('Invalid API response');
-        }
-        const patient = patientResponse.data;
+        const patient = patientResponse.data || patientResponse;
         const checklistResponse = await api('/checklists/patient/' + id).catch(() => []);
 
         // Обработка разных форматов ответа API
@@ -1007,19 +984,10 @@ async function renderSurgeries(page = 1) {
     const surgeriesResponse = await api('/surgeries?page=' + page + '&limit=' + pageSize);
     const patientsResponse = await api('/patients?limit=100');
     const usersResponse = await api('/admin/users?limit=100');
-    if (!surgeriesResponse.success || !surgeriesResponse.data) {
-        throw new Error('Invalid API response');
-    }
-    if (!patientsResponse.success || !patientsResponse.data) {
-        throw new Error('Invalid API response');
-    }
-    if (!usersResponse.success || !usersResponse.data) {
-        throw new Error('Invalid API response');
-    }
-    const surgeries = surgeriesResponse.data;
+    const surgeries = surgeriesResponse.data || surgeriesResponse;
     const meta = surgeriesResponse.meta || {};
-    const patients = patientsResponse.data;
-    const users = usersResponse.data;
+    const patients = patientsResponse.data || patientsResponse;
+    const users = usersResponse.data || usersResponse;
     let items = Array.isArray(surgeries) ? surgeries : (surgeries.surgeries || []);
     let patientsData = Array.isArray(patients) ? patients : (patients.patients || []);
     let html = ` + "`" + `
