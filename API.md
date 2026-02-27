@@ -246,6 +246,16 @@ Authorization: Bearer <access_token>
 
 Возвращает количество пациентов по статусам.
 
+### Фильтрация по ролям
+
+Dashboard endpoint применяет фильтрацию в зависимости от роли пользователя:
+
+- **DISTRICT_DOCTOR**: Видит статистику только по своим пациентам (где doctor_id = user.ID)
+- **SURGEON**: Видит статистику только по пациентам со статусом >= PENDING_REVIEW (PENDING_REVIEW, APPROVED, NEEDS_CORRECTION, SCHEDULED, COMPLETED)
+- **ADMIN**: Видит статистику по всем пациентам
+
+Эта фильтрация согласована с поведением List endpoint (/api/v1/patients).
+
 ---
 
 ## Чек-листы

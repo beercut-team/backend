@@ -181,7 +181,7 @@ backend/
 - `PUT /api/v1/patients/:id` — Обновить данные пациента
 - `PUT /api/v1/patients/:id/status` — Изменить статус пациента
 - `GET /api/v1/patients/public/:accessCode` — Публичный доступ по коду
-- `GET /api/v1/patients/dashboard` — Статистика по пациентам
+- `GET /api/v1/patients/dashboard` — Статистика по пациентам (районные врачи видят только своих пациентов, хирурги — только со статусом >= PENDING_REVIEW)
 
 ### Чек-листы
 - `GET /api/v1/checklists/patient/:patientId` — Чек-лист пациента

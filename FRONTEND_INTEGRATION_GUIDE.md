@@ -704,6 +704,122 @@ GET /api/public/status/{access_code}
 }
 ```
 
+### Dashboard / Statistics
+
+```javascript
+GET /api/v1/patients/dashboard
+Authorization: Bearer {token}
+
+// Response
+{
+  "success": true,
+  "data": {
+    "total_patients": 150,
+    "by_status": {
+      "DRAFT": 5,
+      "IN_PROGRESS": 20,
+      "PENDING_REVIEW": 30,
+      "APPROVED": 25,
+      "NEEDS_CORRECTION": 10,
+      "SCHEDULED": 40,
+      "COMPLETED": 20
+    },
+    "by_district": {
+      "1": 50,
+      "2": 45,
+      "3": 55
+    }
+  }
+}
+```
+
+#### Фильтрация по ролям
+
+Dashboard endpoint применяет фильтрацию в зависимости от роли:
+
+**DISTRICT_DOCTOR**:
+- Видит только своих пациентов (doctor_id = user.ID)
+- Все статусы включены
+
+**SURGEON**:
+- Видит всех пациентов, но только со статусом >= PENDING_REVIEW
+- Включённые статусы: PENDING_REVIEW, APPROVED, NEEDS_CORRECTION, SCHEDULED, COMPLETED
+- Исключённые статусы: DRAFT, IN_PROGRESS
+
+**ADMIN**:
+- Видит всех пациентов
+- Все статусы включены
+
+**Важно**: Эта фильтрация полностью согласована с List endpoint (/api/v1/patients), чтобы избежать несоответствия между статистикой dashboard и списком пациентов.
+
+#### Примеры ответов для разных ролей
+
+**Пример 1: DISTRICT_DOCTOR (видит только своих пациентов)**
+
+```javascript
+// Response для районного врача с 15 пациентами
+{
+  "success": true,
+  "data": {
+    "total_patients": 15,
+    "by_status": {
+      "DRAFT": 2,
+      "IN_PROGRESS": 8,
+      "PENDING_REVIEW": 3,
+      "APPROVED": 1,
+      "NEEDS_CORRECTION": 1,
+      "SCHEDULED": 0,
+      "COMPLETED": 0
+    }
+  }
+}
+```
+
+**Пример 2: SURGEON (видит только пациентов >= PENDING_REVIEW)**
+
+```javascript
+// Response для хирурга (не видит DRAFT и IN_PROGRESS)
+{
+  "success": true,
+  "data": {
+    "total_patients": 95,
+    "by_status": {
+      "PENDING_REVIEW": 30,
+      "APPROVED": 25,
+      "NEEDS_CORRECTION": 10,
+      "SCHEDULED": 20,
+      "COMPLETED": 10
+    }
+  }
+}
+```
+
+**Пример 3: ADMIN (видит всех пациентов)**
+
+```javascript
+// Response для администратора (полная статистика)
+{
+  "success": true,
+  "data": {
+    "total_patients": 150,
+    "by_status": {
+      "DRAFT": 5,
+      "IN_PROGRESS": 20,
+      "PENDING_REVIEW": 30,
+      "APPROVED": 25,
+      "NEEDS_CORRECTION": 10,
+      "SCHEDULED": 40,
+      "COMPLETED": 20
+    },
+    "by_district": {
+      "1": 50,
+      "2": 45,
+      "3": 55
+    }
+  }
+}
+```
+
 ---
 
 ## 🏥 Медицинские стандарты
